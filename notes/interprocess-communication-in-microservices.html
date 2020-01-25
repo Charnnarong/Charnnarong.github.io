@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+    <div class="nav-home">
+        <a href="../index.html">Home</a>
+    </div>
+    <div class="note-container">
+        <h1>Interprocess Communication in Microservices</h1>
+        <div class="ipcms-remark">
+            <p>IPC mechanism can impact application availability</p>
+            <p>A service will typically has both synchronous and asynchronous APIs for operations</p>
+        </div>
+        <table class="ipcms-table">
+            <col style="width:50%">
+            <col style="width:50%">
+            <thead>
+                <tr>
+                    <th>Synchronous</th>
+                    <th>Asynchronous</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Request / Response</td>
+                    <td>Public / (subscribe | async response)</td>
+                </tr>
+                <tr>
+                    <td>Used mostly to communicate with other application</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>HTTP-based</td>
+                    <td>Message-based</td>
+                </tr>
+                <tr>
+                    <td>REST, gRPC</td>
+                    <td>AMQP, <a href="https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol">STOMP</a></td>
+                </tr>
+                <tr>
+                    <td>Each request is processed by exactly one service</td>
+                    <td>Can process by multiple services</td> 
+                </tr>
+                <tr>
+                    <td>Clients expect a timely response from the service</td>
+                    <td>Response isn't sent immediately</td>
+                </tr>
+                <tr>
+                    <td>Maybe blocking I/O </td>
+                    <td>None-blocking I/O  </td>
+                </tr>
+                <tr>
+                    <td>services being tightly coupled</td>
+                    <td>Less coupled</td>
+                </tr>
+            </tbody>
+        </table>
+        <h2>UNDER CONSTRUCTION.....</h2>
+    </div>
+</body>
+
+</html>
