@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
     <link rel="stylesheet" href="../style.css">
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
 </head>
 
 <body>
@@ -14,9 +14,12 @@
     </div>
     <div class="note-container">
         <h1>Interprocess Communication in Microservices</h1>
+        <h3>Interaction styles</h3>
         <div class="ipcms-remark">
-            <p>IPC mechanism can impact application availability</p>
-            <p>A service will typically has both synchronous and asynchronous APIs for operations</p>
+            <ul>
+                <li>IPC mechanism can impact application availability</li>
+                <li>A service will typically has both synchronous and asynchronous APIs for operations</li>
+            </ul>
         </div>
         <table class="ipcms-table">
             <col style="width:50%">
@@ -37,16 +40,18 @@
                     <td>-</td>
                 </tr>
                 <tr>
-                    <td>HTTP-based</td>
+                    <td>Remote procedure invocation-based</td>
                     <td>Message-based</td>
                 </tr>
                 <tr>
                     <td>REST, gRPC</td>
-                    <td>AMQP, <a href="https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol">STOMP</a></td>
+                    <td>AMQP, <a
+                            href="https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol">STOMP</a>
+                    </td>
                 </tr>
                 <tr>
                     <td>Each request is processed by exactly one service</td>
-                    <td>Can process by multiple services</td> 
+                    <td>Can process by multiple services</td>
                 </tr>
                 <tr>
                     <td>Clients expect a timely response from the service</td>
@@ -54,16 +59,171 @@
                 </tr>
                 <tr>
                     <td>Maybe blocking I/O </td>
-                    <td>None-blocking I/O  </td>
+                    <td>None-blocking I/O </td>
                 </tr>
                 <tr>
                     <td>services being tightly coupled</td>
                     <td>Less coupled</td>
                 </tr>
+                <tr>
+                    <td>Less availability</td>
+                    <td>More availability</td>
+                </tr>
+
             </tbody>
         </table>
-        <h2>UNDER CONSTRUCTION.....</h2>
+        <h3>Message formats</h3>
+        <div class="ipcms-remark">
+            <ul>
+                <li>It is essential to use a cross-language message format</li>
+            </ul>
+        </div>
+        <table class="ipcms-table">
+            <col style="width:50%">
+            <col style="width:50%">
+            <thead>
+                <th>Text-based message formats</th>
+                <th>Binary Message formats</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>JSON / XML</td>
+                    <td>Protocol Buffers / Avro / Thrift</td>
+                </tr>
+                <tr>
+                    <td>-</td>
+                    <td>Force to use API-first approach</td>
+                </tr>
+                <tr>
+                    <td>Human readabel/ self describing</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>Messages are verbose</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>overhead of parsing text</td>
+                    <td>Focus on efficiency and performance</td>
+                </tr>
+            </tbody>
+        </table>
+        <h3>REST : Pros and Cons</h3>
+        <table class="ipcms-table">
+            <col style="width:50%">
+            <col style="width:50%">
+            <thead>
+                <th>Pros</th>
+                <th>Cons</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Simple</td>
+                    <td>Request/Response style only</td>
+                </tr>
+                <tr>
+                    <td>Easy to test via browser</td>
+                    <td>Sender and Receiver must be running during the exchange. Hence, reduced availability</td>
+                </tr>
+                <tr>
+                    <td>Firewall friendly</td>
+                    <td>Clients must know the target URLs or Service discovery is needed</td>
+                </tr>
+                <tr>
+                    <td>Doesn't require broker</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+        <h3>gRPC : Pros and Cons</h3>
+        <div class="ipcms-remark">
+            <ul>
+                <li>Binary message-based protocol</li>
+                <li>Uses <a href="https://developers.google.com/protocol-buffers" target="_blank">Protocol Buffers</a>
+                    as an interface definition language (IDL)</li>
+            </ul>
+        </div>
+        <table class="ipcms-table">
+            <col style="width:50%">
+            <col style="width:50%">
+            <thead>
+                <th>Pros</th>
+                <th>Cons</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>efficient, compact, binary format</td>
+                    <td>Older firewall might not support HTTP/2</td>
+                </tr>
+                <tr>
+                    <td>APIs evolve - easy on backward-compatibilities</td>
+                    <td>More work for Javascript to consume gRPC-based API than REST/JSON</td>
+                </tr>
+                <tr>
+                    <td>Interoperable between clients and services written in a wide rage of languages</td>
+                    <td>-</td>
+                </tr>
+
+            </tbody>
+        </table>
+        <div class="note-quote">
+            <div>
+                <p>Using Remote procedure invocation style should consider</p>
+                <ul>
+                    <li>Network timeouts</li>
+                    <li>Rate limited</li>
+                    <li>Circuit breaker pattern</li>
+                </ul>
+            </div>
+        </div>
+        <h3>Broker-based : Pros and Cons</h3>
+        <table class="ipcms-table">
+            <col style="width:50%">
+            <col style="width:50%">
+            <thead>
+                <th>Pros</th>
+                <th>Cons</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Loose coupling</td>
+                    <td>Potential performance bottleneck. (but modern brokers are designed to be highly scalable)</td>
+                </tr>
+                <tr>
+                    <td>Message buffering</td>
+                    <td>Potential single point of failure (but modern broders are designed to be highly available</td>
+                </tr>
+                <tr>
+                    <td>Support both Sync and Async Request/Response </td>
+                    <td>Additional operational complexity</td>
+                </tr>
+               </tbody>
+        </table>
+        <div class="note-quote">
+            <div>
+                <p>Potential design issue </p>
+                <ul>
+                    <li>Messages ordering eg. sending 1,2,3 but may arrive to the target as 2,3,1 that might cause problem</li>
+                    <li>Duplicate messages. Guaranteeing exactly-once is too costly, so, message brokers usually guarantee at least once</li>
+                   
+                </ul>
+            </div>
+        </div>
+        <div class="note-container__ref">
+            <h3>Ref</h3>
+            <div class="note-container__ref--links">
+                <a target="_blank" href="https://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven">Is your
+                    APIs really RESTful?</a>
+                <a target="_blank" href="https://martinfowler.com/articles/richardsonMaturityModel.html">Maturity model
+                    for REST.</a>
+            </div>
+        </div>
     </div>
 </body>
+<footer>
+    <div class="nav-home--footer">
+        <a href="../index.html">Home</a>
+    </div>
+</footer>
 
 </html>

@@ -5,6 +5,7 @@
     width: 100vw;
     height: 100vh;
     overflow-x: auto;
+    --link-color: #008fd4;
 }
 
 *,
@@ -21,7 +22,6 @@ body {
     font-size: calc(0.875em + 0.4vmin);
     font-weight: 400;
     box-sizing: inherit;
-    background-color: #f4f3f0;
 }
 
 .online-course {
@@ -70,16 +70,61 @@ body {
     margin-top: 2.5vh;
 }
 
-.note-container > h1{
+.nav-home--footer{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 2.5vh;
+    padding-bottom: 2rem;
+}
+
+.note-container > h1 {
     text-align: center;
+}
+.note-container > h3 {
+    margin-top: 2rem;
+}
+.note-container__ref {
+    margin-top: 2rem;
+}
+.note-container__ref--links {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.note-container__ref--links a {
+    text-decoration: none;
+    color: var(--link-color);
+}
+
+.note-quote{
+    padding: 2rem;
+    margin: 2rem;
+    align-items: center;
+    justify-items: center;
+    display: flex;
+    flex-direction: column;
+    background-color: #f9f9f954;
+    border: 1px dashed #4343436b;
+}
+
+.note-quote ul{
+    padding-left: 1.25rem;
 }
 
 /* ---- Interprocess Communication >>> ----- */
 .ipcms-remark{
-    margin-top: 2.5rem;
+    margin-top: 0.5rem;
 }
-.ipcms-remark > p{
-    padding-top: .4rem;
+.ipcms-remark > ul{
+    padding-left: 1.5rem;
+}
+
+.ipcms-remark a{
+    text-decoration: none;
+    color: var(--link-color);;
 }
 
 .ipcms-table{
@@ -92,7 +137,7 @@ body {
 }
 .ipcms-table a{
     text-decoration: none;
-    color: #008fd4;
+    color: var(--link-color);;
 
 }
 .ipcms-table > table, th, td {
