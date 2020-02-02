@@ -22,7 +22,7 @@ footer{
 }
 
 body {
-
+    line-height: 1.58;
     font-family: 'Roboto', sans-serif;
     font-size: calc(0.875em + 0.4vmin);
     font-weight: 400;
