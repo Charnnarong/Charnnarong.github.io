@@ -9,22 +9,32 @@
     --link-color-click: #0382c2;
 }
 
-*,
-::after,
-::before {
+*, ::after, ::before {
     margin: 0;
     padding: 0;
     box-sizing: inherit;
 }
 
-footer{
+footer {
     text-align: center;
+}
+
+@media only screen and (min-width: 727.98px) {
+    body {
+        font-size: 21px;
+    }
+}
+
+@media only screen and (max-width: 727.98px) {
+    body {
+        font-size: 18px;
+    }
 }
 
 body {
     line-height: 1.58;
     font-family: 'Roboto', sans-serif;
-    font-size: calc(0.875em + 0.4vmin);
+    /* font-size: calc(0.875em + 0.4vmin); */
     font-weight: 400;
     box-sizing: inherit;
 }
@@ -39,11 +49,11 @@ body {
     margin-top: 2.5vh;
 }
 
-.online-course-content > * {
+.online-course-content>* {
     padding: 0.5rem;
 }
 
-.online-course-content > div {
+.online-course-content>div {
     border-bottom: dashed bisque;
 }
 
@@ -56,26 +66,26 @@ body {
     margin-top: 10vh;
 }
 
-.blogs-list{
+.blogs-list {
     margin-top: 5vh;
 }
 
-.blogs-list__container{
+.blogs-list__container {
     margin-top: 2.5vh;
 }
 
-.blogs-list__container > ul{
+.blogs-list__container>ul {
     list-style: none;
 }
 
-.nav-home{
+.nav-home {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
     margin-top: 2.5vh;
 }
 
-.nav-home--footer{
+.nav-home--footer {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -83,15 +93,18 @@ body {
     padding-bottom: 2rem;
 }
 
-.note-container > h1 {
+.note-container>h1 {
     text-align: center;
 }
-.note-container > h3 {
+
+.note-container>h3 {
     margin-top: 2rem;
 }
+
 .note-container__ref {
     margin-top: 2rem;
 }
+
 .note-container__ref--links {
     margin-top: 0.5rem;
     display: flex;
@@ -104,7 +117,7 @@ body {
     color: var(--link-color);
 }
 
-.note-quote{
+.note-quote {
     padding: 2rem;
     margin: 2rem;
     align-items: center;
@@ -115,11 +128,11 @@ body {
     border: 1px dashed #4343436b;
 }
 
-.note-quote ul{
+.note-quote ul {
     padding-left: 1.25rem;
 }
 
-.btn-primary{
+.btn-primary {
     text-decoration: none;
     color: var(--link-color);
     border: 1px solid transparent;
@@ -127,13 +140,13 @@ body {
     border-radius: 0.4rem;
 }
 
-.btn-primary:hover{
+.btn-primary:hover {
     border: 1px solid #05a2f0c5;
     padding: .5rem;
     border-radius: 0.4rem;
 }
 
-.btn-primary:active{
+.btn-primary:active {
     border: 1px solid #044464f3;
     color: var(--link-color-click);
     padding: .5rem;
@@ -141,33 +154,40 @@ body {
 }
 
 /* ---- Interprocess Communication >>> ----- */
-.ipcms-remark{
+
+.ipcms-remark {
     margin-top: 0.5rem;
 }
-.ipcms-remark > ul{
+
+.ipcms-remark>ul {
     padding-left: 1.5rem;
 }
 
-.ipcms-remark a{
+.ipcms-remark a {
     text-decoration: none;
-    color: var(--link-color);;
+    color: var(--link-color);
+    ;
 }
 
-.ipcms-table{
+.ipcms-table {
     width: 100%;
     margin-top: 2.5vh;
     border-collapse: collapse;
 }
-.ipcms-table > tbody{
+
+.ipcms-table>tbody {
     text-align: center;
 }
-.ipcms-table a{
-    text-decoration: none;
-    color: var(--link-color);;
 
+.ipcms-table a {
+    text-decoration: none;
+    color: var(--link-color);
+    ;
 }
-.ipcms-table > table, th, td {
+
+.ipcms-table>table, th, td {
     border: 1px solid rgba(0, 0, 0, 0.3);
     padding: 0.5rem;
-  }
+}
+
 /* ---- <<< Interprocess Communication ----- */
