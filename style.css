@@ -5,6 +5,7 @@
     width: 100vw;
     height: 100vh;
     overflow-x: auto;
+    background-color: #fffff6;
     --link-color: #008fd4;
     --link-color-click: #0382c2;
 }
