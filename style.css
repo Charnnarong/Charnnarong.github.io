@@ -5,12 +5,14 @@
     width: 100vw;
     height: 100vh;
     overflow-x: auto;
-    background-color: #fffff6;
+    background-image: url("./images/paper8.png");
     --link-color: #008fd4;
     --link-color-click: #0382c2;
 }
 
-*, ::after, ::before {
+*,
+::after,
+::before {
     margin: 0;
     padding: 0;
     box-sizing: inherit;
@@ -154,6 +156,46 @@ body {
     border-radius: 0.4rem;
 }
 
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 100%;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.8em;
+}
+
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
 /* ---- Interprocess Communication >>> ----- */
 
 .ipcms-remark {
@@ -186,7 +228,9 @@ body {
     ;
 }
 
-.ipcms-table>table, th, td {
+.ipcms-table>table,
+th,
+td {
     border: 1px solid rgba(0, 0, 0, 0.3);
     padding: 0.5rem;
 }
