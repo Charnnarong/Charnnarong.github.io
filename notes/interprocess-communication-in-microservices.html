@@ -11,7 +11,8 @@
 
 <body>
     <div id="fb-root"></div>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v5.0"></script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v5.0">
+    </script>
     <div class="nav-home">
         <a class="btn-primary" href="../index.html">Home</a>
     </div>
@@ -200,15 +201,17 @@
                     <td>Support both Sync and Async Request/Response </td>
                     <td>Additional operational complexity</td>
                 </tr>
-               </tbody>
+            </tbody>
         </table>
         <div class="note-quote">
             <div>
                 <p>Potential design issue </p>
                 <ul>
-                    <li>Messages ordering eg. sending 1,2,3 but may arrive to the target as 2,3,1 that might cause problem</li>
-                    <li>Duplicate messages. Guaranteeing exactly-once is too costly, so, message brokers usually guarantee at least once</li>
-                   
+                    <li>Messages ordering eg. sending 1,2,3 but may arrive to the target as 2,3,1 that might cause
+                        problem</li>
+                    <li>Duplicate messages. Guaranteeing exactly-once is too costly, so, message brokers usually
+                        guarantee at least once</li>
+
                 </ul>
             </div>
         </div>
@@ -224,9 +227,11 @@
     </div>
 </body>
 <footer>
-    <div class="fb-like" data-href="https://charnnarong.github.io/notes/interprocess-communication-in-microservices.html" data-width="" data-layout="button_count" data-action="like" data-size="small" data-share="true"></div>
+    <div class="fb-like"
+        data-href="https://charnnarong.github.io/notes/interprocess-communication-in-microservices.html" data-width=""
+        data-layout="button_count" data-action="like" data-size="small" data-share="true"></div>
     <div class="nav-home--footer">
-        <a class="btn-primary" href="../index.html">Home</a>        
+        <a class="btn-primary" href="../index.html">Home</a>
     </div>
 </footer>
 

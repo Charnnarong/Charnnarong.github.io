@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+
+    <title>Kubernetes Architecture</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+    <style>
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item-checkbox {
+            margin-left: -20px;
+            vertical-align: middle;
+        }
+    </style>
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+        <h1 id="kubernetes-architecture">Kubernetes Architecture</h1>
+        <h4 id="the-lighterning-fast-summary">The lighterning fast summary.</h4>
+        <p><img src="https://i.imgur.com/LZvCMYV.png" alt="Imgur"></p>
+        <h2 id="master-node-components-api-server">Master Node Components: API Server</h2>
+        <ul>
+            <li>only person who read/save from/to etcd. No one else.</li>
+            <li>Handle RESTful calls friom uers, operators and external agents.</li>
+            <li>Support custom API servers.( TODO explain more)</li>
+            <li>highly configurable and customizable</li>
+        </ul>
+        <h2 id="master-node-components-scheduler">Master Node Components: Scheduler</h2>
+        <ul>
+            <li>assign new objects, such as pods, to nodes.</li>
+            <li>assigning decition depends on current k8s cluster state and constrains comes from requitement such as
+                node
+                labeled with disk==ssd, Quality of Service requirement, data locality, taints, toleration ,etc.</li>
+            <li>read etcd's value via API server</li>
+            <li>Read resoruce usage data from nodes</li>
+            <li>highly configurable and customizable</li>
+            <li>additional custom schedulers are supoorted.</li>
+            <li>object's configuration data should specify what scheduler it wanted otherwise defult scheduler will take
+                place.</li>
+        </ul>
+        <h2 id="master-node-components-controller-managers">Master Node Components: Controller Managers</h2>
+        <ul>
+            <li>Controller managers
+                <ul>
+                    <li>running controllers to regulate the state of the Kubernetes cluster.</li>
+                    <li>comparing objects's configuration data with current state in etcd (again via api-server) and try
+                        to
+                        matches the desired state.</li>
+                </ul>
+            </li>
+            <li>kube-controller-manager
+                <ul>
+                    <li>ensure pod counts are as expected.</li>
+                    <li>create endpoints, service accounts and API access tokens.</li>
+                </ul>
+            </li>
+            <li>cloud-controller-manager
+                <ul>
+                    <li>interact with the underlying infrastructure of a cloud provider when nodes become unavailable.
+                    </li>
+                    <li>manage storage volumes when provided by a cloud service.</li>
+                    <li>manage load balancing and routing.</li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="master-node-components-etcd">Master Node Components: etcd</h2>
+        <ul>
+            <li>persist a K8s cluster's state.</li>
+            <li>new data is written to the data store only by appending to it.</li>
+            <li>data never replaced in the data store.</li>
+            <li>obsolete data is compacted periodically to minimize the size of the data store.</li>
+            <li>should be in HA mode in Production env (and or Stage as needed).</li>
+            <li>based on the Raft Consensus Algorithm</li>
+            <li>One Master at a time, the rest will be followers.</li>
+            <li>stores
+                <ul>
+                    <li>cluster state</li>
+                    <li>subnets</li>
+                    <li>ConfigMaps</li>
+                    <li>Secrets</li>
+                    <li>etc.</li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="worker-node">Worker Node</h2>
+        <ul>
+            <li>provides a running environment for client applications.</li>
+            <li>containerized microservices are encapsulated in Pods, controlled by the cluster control plane agents
+                running
+                on master node.</li>
+            <li>Pods are scheduled on worker nodes.</li>
+            <li>Pod is the smallest scheduling unit in K8s</li>
+            <li>Pod is a logical collection of one or more containers scheduled together.</li>
+            <li>External world connect to worker nodes to access the application ( Not to the master node )</li>
+        </ul>
+        <h2 id="worker-node-components-container-runtime">Worker Node Components: Container Runtime</h2>
+        <ul>
+            <li>k8s doesn't have the capability to directly handle containers.</li>
+            <li>k8s requires container runtime on the node</li>
+            <li>k8s supports
+                <ul>
+                    <li><a href="https://www.docker.com/">Docker</a> - most widely used with k8s</li>
+                    <li><a href="https://cri-o.io/">CRI-O </a> - a lightweight container runtime for k8s. Supports
+                        Docker
+                        image registries</li>
+                    <li><a href="https://containerd.io/">containerd</a> - simple and portable container runtime
+                        providing
+                        robusness</li>
+                    <li><a href="https://github.com/rkt/rkt">rkt</a> - a pod-native container engie, it also runs Docker
+                        images</li>
+                    <li><a href="https://github.com/kubernetes-incubator/rktlet">rktlet</a> - a k8s <a
+                            href="https://github.com/kubernetes/community/blob/master/contributors/devel/sig-node/container-runtime-interface.md">Container
+                            Runtime Interface</a> implementation using rkt</li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="worker-node-components-kubelet">Worker Node Components: kubelet</h2>
+        <ul>
+            <li>it is an agent running on each node.</li>
+            <li>communicates with the control plane from master node.</li>
+            <li>receives Pod definitions primarily from the API server</li>
+            <li>interacts with the container runtime on the node to run containers associated with the Pod.</li>
+            <li>monitors the health of the Pod's running containers.</li>
+            <li>connects to the conttainer runtime using Container Runtime Interface (CRI)</li>
+            <li><img src="https://i.imgur.com/sJRwnDD.png" alt="Imgur"></li>
+            <li>CRI consists of protocol buffers, gRPC API, and libraries.</li>
+            <li>CRI implements 2 services
+                <ul>
+                    <li>ImageService - responsible for all the image-related operations.</li>
+                    <li>RuntimeService - responsible for all the Pod and container-related operations.</li>
+                </ul>
+            </li>
+            <li>Any container runtime that implements CRI can be used by Kubernetes to manage Pods, containers and
+                container
+                images.</li>
+        </ul>
+        <h2 id="worker-node-components-kubelet---cri-shims">Worker Node Components: kubelet - CRI shims</h2>
+        <ul>
+            <li>dockershim
+                <ul>
+                    <li><img src="https://i.imgur.com/WTHEq3J.png" alt="Imgur"></li>
+                    <li><a
+                            href="http://blog.kubernetes.io/2017/11/containerd-container-runtime-options-kubernetes.html">ref</a>
+                    </li>
+                    <li>containers are created using Docker installed on the worker nodes.</li>
+                    <li>Internally, Dockers uses containerd to create and manage containers.</li>
+                </ul>
+            </li>
+            <li>cri-containerd
+                <ul>
+                    <li><img src="https://i.imgur.com/Dj2SzOa.png" alt="Imgur"></li>
+                    <li>can directly use DOcker's smaller offspring containerd to create and manage containers.</li>
+                    <li><a
+                            href="http://blog.kubernetes.io/2017/11/containerd-container-runtime-options-kubernetes.html">ref</a>
+                    </li>
+                </ul>
+            </li>
+            <li>CRI-O
+                <ul>
+                    <li><img src="https://cri-o.io/assets/images/architecture.png" alt="img"></li>
+                    <li>enables using any Open Container Initiative (OCI) compatible runtimes.</li>
+                    <li>it supported the following as runtimes
+                        <ul>
+                            <li>runC</li>
+                            <li>Clear Containers</li>
+                        </ul>
+                    </li>
+                    <li>Any OCI-compliant runtime can be plugged-in.</li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="worker-node-components-kube-proxy">Worker Node Components: kube-proxy</h2>
+        <ul>
+            <li>kube-proxy is the network agent which runs on each node.</li>
+            <li>responsible for dynamic updates and maintaince of all netwroking rules on the node.</li>
+            <li>it abstract the details of Pods networking and forwards connection requests to Pods.</li>
+        </ul>
+        <h2 id="worker-node-components-addons">Worker Node Components: Addons</h2>
+        <ul>
+            <li>Addons are cluster features and functionality not yet available in K8s.</li>
+            <li>implement through 3rd-party pods and services.
+                <ul>
+                    <li>DNS - cluster DNS is a DNS server required to assign DNS records to K8s objects and resources.
+                    </li>
+                    <li>Dashboard - a general purposed web-based user interface for cluster management.</li>
+                    <li>Monitoring - collects cluster-level container metrics and saves them to a central data store.
+                    </li>
+                    <li>Logging - collects cluster-level container logs and saves them to a central log strore for
+                        analysis.
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="networking-challenges">Networking Challenges</h2>
+        <p>All these networking challenges must be addressed before deploying a K8s cluster.</p>
+        <ul>
+            <li>Container-to-container communication inside Pods</li>
+            <li>Pod-to-Pod communication on the same node and accross cluster nodes</li>
+            <li>Pod-to-Service comminication within the same namespace and across cluster namespaces</li>
+            <li>External-to-Service communication for clients to access applicaitons in a cluster.</li>
+        </ul>
+        <h2 id="tobe-continue">Tobe continue...</h2>
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
