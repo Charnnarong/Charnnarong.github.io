@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Kubernetes Architecture</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+    <style>
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item-checkbox {
+            margin-left: -20px;
+            vertical-align: middle;
+        }
+    </style>
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+        <h1 id="kubernetes-network">Kubernetes network</h1>
+        <h2 id="container-to-container-communication-inside-pods">Container-to-Container Communication Inside Pods.</h2>
+        <ul>
+            <li>A container runtime creates an isolated network space for each container it starts.</li>
+            <li>On Linux, that isolated network space is referred to as a network namespace.</li>
+            <li>When a Pod is started, a network namespace is created inside the Pod.</li>
+            <li>All containers runnings inside the Pod will share that network namespace so that they can talk to each
+                other via localhost.</li>
+        </ul>
+        <h2 id="pod-to-pod-communication-across-nodes">Pod-to-Pod Communication Across Nodes.</h2>
+        <ul>
+            <li>cluster Pods are scheduled on nodes randomly.</li>
+            <li>Pods are expected to be able to communicate with all other Pods in the cluster without implementation of
+                Network Address Translation.</li>
+            <li>k8s treats Pods as VMs on a network.</li>
+            <li>As if each VM receives an IP address - thus each Pod receiving an IP address too.</li>
+            <li>This is called IP-per-Pod</li>
+            <li>Pod-to-Pod communication is like VMs communicate to each other.</li>
+            <li>Containers share the Pod's network namespace and must coordinate ports assignment inside the Pod just as
+                application would on a VM.</li>
+            <li>Container can still communicate to each other via localhost inside a Pod.</li>
+            <li>Containers are also integrated with the overall K8s network model through the use of the Container
+                Network Interface (<a href="https://github.com/containernetworking/cni">CNI</a>)</li>
+            <li>CNI = a set of specification + libraries.</li>
+            <li>CNI allow plugins to configure the networking for container.</li>
+            <li>CNI has core plugin.</li>
+            <li>CNI has 3rd-party Software Defined Networking (SDN) solutions implementing the k8s networking model.
+            </li>
+            <li>Some plugin offer support for Network Policies.</li>
+            <li>Only a few solutions availiable
+                <ul>
+                    <li><a href="https://github.com/coreos/flannel/">Flannel</a></li>
+                    <li><a href="https://www.weave.works/oss/net/">Weave</a></li>
+                    <li><a href="https://www.projectcalico.org/">Calico</a><br>
+                        <img src="https://i.imgur.com/cAxfeVb.png" alt="Imgur"></li>
+                </ul>
+            </li>
+            <li>The container runtime offloads the IP assignment to CNI.</li>
+            <li>CNI, in turn, connects to the underlying configured plugin such as Bridge or MACvlan to get the IP
+                address.</li>
+            <li>Once the IP address is given by the respective plugin, CNI forwards it back to the requested container
+                runtime.</li>
+            <li><a href="https://kubernetes.io/docs/concepts/cluster-administration/networking/">cluster-administration
+                    &gt; networking</a></li>
+        </ul>
+        <h2 id="pod-to-external-world-communication">Pod-to-External World Communication</h2>
+        <ul>
+            <li>Containerized application needed to be accessed from outside world.</li>
+            <li>k8s enabled external accessibility through <strong>service</strong>.</li>
+            <li>Services are exposed to the external world with <strong>kube-proxy</strong></li>
+            <li>Applications become accessible from outside the cluster over a virtual IP.</li>
+        </ul>
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
