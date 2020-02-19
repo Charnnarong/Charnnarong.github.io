@@ -2,17 +2,27 @@
 <html lang="en">
 
 <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../style.css">
     <script type="text/javascript" src="../main.js" charset="utf-8"></script>
-    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <div id="fb-root"></div>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v5.0">
-    </script>
     <div class="nav-home">
         <a class="btn-primary" href="../index.html">Home</a>
     </div>
@@ -227,9 +237,6 @@
     </div>
 </body>
 <footer>
-    <div class="fb-like"
-        data-href="https://charnnarong.github.io/notes/interprocess-communication-in-microservices.html" data-width=""
-        data-layout="button_count" data-action="like" data-size="small" data-share="true"></div>
     <div class="nav-home--footer">
         <a class="btn-primary" href="../index.html">Home</a>
     </div>
