@@ -2,11 +2,24 @@
 <html>
 
 <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <script type="text/javascript" src="../main.js" charset="utf-8"></script>
-    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
 
     <title>Kubernetes Architecture</title>
 
@@ -35,26 +48,27 @@
     </div>
     <div class="vscode-light note-container">
         <h1 id="kubernetes-architecture">Kubernetes Architecture</h1>
-        <h4 id="the-lighterning-fast-summary">The lighterning fast summary.</h4>
+        <h4 id="the-lighterning-fast-summary">The lightning fast summary.</h4>
         <p><img src="https://i.imgur.com/LZvCMYV.png" alt="Imgur"></p>
         <h2 id="master-node-components-api-server">Master Node Components: API Server</h2>
         <ul>
             <li>only person who read/save from/to etcd. No one else.</li>
-            <li>Handle RESTful calls friom uers, operators and external agents.</li>
+            <li>Handle RESTful calls from user, operators and external agents.</li>
             <li>Support custom API servers.( TODO explain more)</li>
             <li>highly configurable and customizable</li>
         </ul>
         <h2 id="master-node-components-scheduler">Master Node Components: Scheduler</h2>
         <ul>
             <li>assign new objects, such as pods, to nodes.</li>
-            <li>assigning decition depends on current k8s cluster state and constrains comes from requitement such as
+            <li>assigning decision depends on current k8s cluster state and constrains comes from requirement such as
                 node
                 labeled with disk==ssd, Quality of Service requirement, data locality, taints, toleration ,etc.</li>
             <li>read etcd's value via API server</li>
-            <li>Read resoruce usage data from nodes</li>
+            <li>Read resource usage data from nodes</li>
             <li>highly configurable and customizable</li>
-            <li>additional custom schedulers are supoorted.</li>
-            <li>object's configuration data should specify what scheduler it wanted otherwise defult scheduler will take
+            <li>additional custom schedulers are supported.</li>
+            <li>object's configuration data should specify what scheduler it wanted otherwise default scheduler will
+                take
                 place.</li>
         </ul>
         <h2 id="master-node-components-controller-managers">Master Node Components: Controller Managers</h2>
@@ -62,7 +76,7 @@
             <li>Controller managers
                 <ul>
                     <li>running controllers to regulate the state of the Kubernetes cluster.</li>
-                    <li>comparing objects's configuration data with current state in etcd (again via api-server) and try
+                    <li>comparing object's configuration data with current state in etcd (again via api-server) and try
                         to
                         matches the desired state.</li>
                 </ul>
@@ -140,7 +154,7 @@
             <li>receives Pod definitions primarily from the API server</li>
             <li>interacts with the container runtime on the node to run containers associated with the Pod.</li>
             <li>monitors the health of the Pod's running containers.</li>
-            <li>connects to the conttainer runtime using Container Runtime Interface (CRI)</li>
+            <li>connects to the container runtime using Container Runtime Interface (CRI)</li>
             <li><img src="https://i.imgur.com/sJRwnDD.png" alt="Imgur"></li>
             <li>CRI consists of protocol buffers, gRPC API, and libraries.</li>
             <li>CRI implements 2 services
@@ -191,7 +205,7 @@
         <h2 id="worker-node-components-kube-proxy">Worker Node Components: kube-proxy</h2>
         <ul>
             <li>kube-proxy is the network agent which runs on each node.</li>
-            <li>responsible for dynamic updates and maintaince of all netwroking rules on the node.</li>
+            <li>responsible for dynamic updates and maintains of all networking rules on the node.</li>
             <li>it abstract the details of Pods networking and forwards connection requests to Pods.</li>
         </ul>
         <h2 id="worker-node-components-addons">Worker Node Components: Addons</h2>
@@ -204,7 +218,7 @@
                     <li>Dashboard - a general purposed web-based user interface for cluster management.</li>
                     <li>Monitoring - collects cluster-level container metrics and saves them to a central data store.
                     </li>
-                    <li>Logging - collects cluster-level container logs and saves them to a central log strore for
+                    <li>Logging - collects cluster-level container logs and saves them to a central log store for
                         analysis.
                     </li>
                 </ul>
@@ -214,12 +228,11 @@
         <p>All these networking challenges must be addressed before deploying a K8s cluster.</p>
         <ul>
             <li>Container-to-container communication inside Pods</li>
-            <li>Pod-to-Pod communication on the same node and accross cluster nodes</li>
-            <li>Pod-to-Service comminication within the same namespace and across cluster namespaces</li>
-            <li>External-to-Service communication for clients to access applicaitons in a cluster.</li>
+            <li>Pod-to-Pod communication on the same node and across cluster nodes</li>
+            <li>Pod-to-Service communication within the same namespace and across cluster namespaces</li>
+            <li>External-to-Service communication for clients to access applications in a cluster.</li>
         </ul>
-        <h2 id="tobe-continue">Tobe continue...</h2>
-
+        <h2 id="to-be-continue">To be continue...</h2>
     </div>
 </body>
 <footer>

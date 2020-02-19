@@ -4,7 +4,8 @@
     color: rgb(102, 30, 30);
     width: 100vw;
     height: 100vh;
-    overflow-x: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     background-image: url("./images/paper8.png");
     --link-color: #008fd4;
     --link-color-click: #0382c2;
@@ -36,7 +37,7 @@ footer {
 
 body {
     line-height: 1.58;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Literata', sans-serif;
     /* font-size: calc(0.875em + 0.4vmin); */
     font-weight: 400;
     box-sizing: inherit;
@@ -99,12 +100,17 @@ body {
 .note-container>h1 {
     text-align: center;
 }
+
+.note-container img {
+    margin: 1.5em 0;
+}
+
 .note-container>h2 {
     margin-left: -1.5rem;
     margin-top: 2rem;
 }
 
-.note-container> ul > li > ul > li {
+.note-container>ul>li>ul>li {
     margin-left: 4rem;
 }
 
