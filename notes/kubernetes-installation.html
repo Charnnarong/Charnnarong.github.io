@@ -47,7 +47,6 @@
         <a class="btn-primary" href="../index.html">Home</a>
     </div>
     <div class="vscode-light note-container">
-
         <h1 id="installing-kubernetes">Installing Kubernetes</h1>
         <h2 id="kubernetes-configuration">Kubernetes Configuration.</h2>
         <p>Four major installation types.</p>
@@ -75,8 +74,62 @@
                 </ul>
             </li>
         </ul>
-
-
+        <h2 id="infrastructure-for-kubernetes-installation">Infrastructure for Kubernetes Installation.</h2>
+        <p>After installation type was chosen. we need to make some Infrastructure-related decision, such as</p>
+        <ul>
+            <li>Should we setup K8s on
+                <ul>
+                    <li>bare metal</li>
+                    <li>public cloud</li>
+                    <li>private cloud</li>
+                </ul>
+            </li>
+            <li>Underlying OS ?
+                <ul>
+                    <li>RHEL?</li>
+                    <li>CoreOS?</li>
+                    <li>CentOS?</li>
+                    <li>?</li>
+                </ul>
+            </li>
+            <li>Which networking solution should we use?</li>
+            <li>And so on.</li>
+            <li>More details on the <a href="https://kubernetes.io/docs/setup/">official doc</a></li>
+        </ul>
+        <h2 id="localhost-installation">Localhost Installation</h2>
+        <p>only a few option for localhost installation available to deploy single or multi-node k8s cluster on our
+            workstation/laptop.</p>
+        <ul>
+            <li><a href="https://kubernetes.io/docs/getting-started-guides/minikube/">Minikube</a> single-node local k8s
+                cluster. <strong>recommended</strong></li>
+            <li><a href="https://www.docker.com/products/docker-desktop">Docker Desktop</a> single-node local k8s
+                cluster for Windows and Mac</li>
+            <li><a href="https://www.ubuntu.com/kubernetes/docs/install-local">CDK on LXD</a> multi-node local cluster
+                with LXD containers.</li>
+        </ul>
+        <h2 id="on-premise-installation">On-Premise Installation.</h2>
+        <p>K8s can be installed on-premise on VMs and bare metal.</p>
+        <ul>
+            <li>On-Premise VMs
+                <ul>
+                    <li>via Vagrant, VMware vSphere, KVM, or another Configuration Management tool in conjunction with a
+                        hypervisor software.</li>
+                    <li>Tools
+                        <ul>
+                            <li><a href="https://www.ansible.com/">Ansible</a></li>
+                            <li><a href="https://github.com/kubernetes/kubeadm">kubeadm</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li>On-Premise Bare Metal
+                <ul>
+                    <li>Need underlying OS like RHEL, CoreOS, CentOS, Fedora, Ubuntu, etc.</li>
+                    <li>Most of the tools used to install K8s on VMs can be used with bare metal installations as well.
+                    </li>
+                </ul>
+            </li>
+        </ul>
     </div>
 </body>
 <footer>
