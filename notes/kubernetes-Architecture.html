@@ -47,8 +47,9 @@
         <a class="btn-primary" href="../index.html">Home</a>
     </div>
     <div class="vscode-light note-container">
+
         <h1 id="kubernetes-architecture">Kubernetes Architecture</h1>
-        <h4 id="the-lighterning-fast-summary">The lightning fast summary.</h4>
+        <h4 id="the-lightning-fast-summary">The lightning fast summary.</h4>
         <p><img src="https://i.imgur.com/LZvCMYV.png" alt="Imgur"></p>
         <h2 id="master-node-components-api-server">Master Node Components: API Server</h2>
         <ul>
@@ -61,15 +62,14 @@
         <ul>
             <li>assign new objects, such as pods, to nodes.</li>
             <li>assigning decision depends on current k8s cluster state and constrains comes from requirement such as
-                node
-                labeled with disk==ssd, Quality of Service requirement, data locality, taints, toleration ,etc.</li>
+                node labeled with disk==ssd, Quality of Service requirement, data locality, taints, toleration ,etc.
+            </li>
             <li>read etcd's value via API server</li>
             <li>Read resource usage data from nodes</li>
             <li>highly configurable and customizable</li>
             <li>additional custom schedulers are supported.</li>
             <li>object's configuration data should specify what scheduler it wanted otherwise default scheduler will
-                take
-                place.</li>
+                take place.</li>
         </ul>
         <h2 id="master-node-components-controller-managers">Master Node Components: Controller Managers</h2>
         <ul>
@@ -77,8 +77,7 @@
                 <ul>
                     <li>running controllers to regulate the state of the Kubernetes cluster.</li>
                     <li>comparing object's configuration data with current state in etcd (again via api-server) and try
-                        to
-                        matches the desired state.</li>
+                        to matches the desired state.</li>
                 </ul>
             </li>
             <li>kube-controller-manager
@@ -119,8 +118,7 @@
         <ul>
             <li>provides a running environment for client applications.</li>
             <li>containerized microservices are encapsulated in Pods, controlled by the cluster control plane agents
-                running
-                on master node.</li>
+                running on master node.</li>
             <li>Pods are scheduled on worker nodes.</li>
             <li>Pod is the smallest scheduling unit in K8s</li>
             <li>Pod is a logical collection of one or more containers scheduled together.</li>
@@ -134,11 +132,9 @@
                 <ul>
                     <li><a href="https://www.docker.com/">Docker</a> - most widely used with k8s</li>
                     <li><a href="https://cri-o.io/">CRI-O </a> - a lightweight container runtime for k8s. Supports
-                        Docker
-                        image registries</li>
+                        Docker image registries</li>
                     <li><a href="https://containerd.io/">containerd</a> - simple and portable container runtime
-                        providing
-                        robusness</li>
+                        providing robusness</li>
                     <li><a href="https://github.com/rkt/rkt">rkt</a> - a pod-native container engie, it also runs Docker
                         images</li>
                     <li><a href="https://github.com/kubernetes-incubator/rktlet">rktlet</a> - a k8s <a
@@ -154,8 +150,8 @@
             <li>receives Pod definitions primarily from the API server</li>
             <li>interacts with the container runtime on the node to run containers associated with the Pod.</li>
             <li>monitors the health of the Pod's running containers.</li>
-            <li>connects to the container runtime using Container Runtime Interface (CRI)</li>
-            <li><img src="https://i.imgur.com/sJRwnDD.png" alt="Imgur"></li>
+            <li>connects to the container runtime using Container Runtime Interface (CRI)<br>
+                <img src="https://i.imgur.com/sJRwnDD.png" alt="Imgur"></li>
             <li>CRI consists of protocol buffers, gRPC API, and libraries.</li>
             <li>CRI implements 2 services
                 <ul>
@@ -164,14 +160,13 @@
                 </ul>
             </li>
             <li>Any container runtime that implements CRI can be used by Kubernetes to manage Pods, containers and
-                container
-                images.</li>
+                container images.</li>
         </ul>
         <h2 id="worker-node-components-kubelet---cri-shims">Worker Node Components: kubelet - CRI shims</h2>
         <ul>
-            <li>dockershim
+            <li>dockershim<br>
+                <img src="https://i.imgur.com/WTHEq3J.png" alt="Imgur">
                 <ul>
-                    <li><img src="https://i.imgur.com/WTHEq3J.png" alt="Imgur"></li>
                     <li><a
                             href="http://blog.kubernetes.io/2017/11/containerd-container-runtime-options-kubernetes.html">ref</a>
                     </li>
@@ -179,20 +174,20 @@
                     <li>Internally, Dockers uses containerd to create and manage containers.</li>
                 </ul>
             </li>
-            <li>cri-containerd
+            <li>cri-containerd<br>
+                <img src="https://i.imgur.com/Dj2SzOa.png" alt="Imgur">
                 <ul>
-                    <li><img src="https://i.imgur.com/Dj2SzOa.png" alt="Imgur"></li>
-                    <li>can directly use DOcker's smaller offspring containerd to create and manage containers.</li>
+                    <li>can directly use Docker's smaller offspring containerd to create and manage containers.</li>
                     <li><a
                             href="http://blog.kubernetes.io/2017/11/containerd-container-runtime-options-kubernetes.html">ref</a>
                     </li>
                 </ul>
             </li>
-            <li>CRI-O
+            <li>CRI-O<br>
+                <img src="https://cri-o.io/assets/images/architecture.png" alt="img">
                 <ul>
-                    <li><img src="https://cri-o.io/assets/images/architecture.png" alt="img"></li>
-                    <li>enables using any Open Container Initiative (OCI) compatible runtimes.</li>
-                    <li>it supported the following as runtimes
+                    <li>enables using any Open Container Initiative (OCI) compatible runtime.</li>
+                    <li>it supported the following as runtime
                         <ul>
                             <li>runC</li>
                             <li>Clear Containers</li>
@@ -219,8 +214,7 @@
                     <li>Monitoring - collects cluster-level container metrics and saves them to a central data store.
                     </li>
                     <li>Logging - collects cluster-level container logs and saves them to a central log store for
-                        analysis.
-                    </li>
+                        analysis.</li>
                 </ul>
             </li>
         </ul>

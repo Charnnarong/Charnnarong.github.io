@@ -112,6 +112,24 @@ body {
 
 .note-container>ul>li>ul>li {
     margin-left: 4rem;
+    list-style-type: none;
+}
+.note-container>ul>li>ul>li::before {
+    content: "\2501";
+    padding-right: 1rem;
+}
+
+.note-container>ul>li>ul>li>ul {
+    margin-left: 4rem;
+}
+
+.note-container>ul>li>ul>li>ul>li {
+    list-style-type: none;
+}
+.note-container>ul>li>ul>li>ul>li::before {
+    font-size: 1.2em;
+    content: "\25B8";
+    padding-right: 1rem;
 }
 
 .note-container>h3 {
