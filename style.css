@@ -106,10 +106,11 @@ body {
 }
 
 .note-container>h2 {
-    margin-left: -1.5rem;
     margin-top: 2rem;
 }
-
+.note-container ul{
+    list-style-position: inside;
+}
 .note-container>ul>li>ul>li {
     margin-left: 4rem;
     list-style-type: none;

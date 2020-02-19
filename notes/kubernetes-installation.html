@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Kubernetes Architecture</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+    <style>
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item-checkbox {
+            margin-left: -20px;
+            vertical-align: middle;
+        }
+    </style>
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+
+        <h1 id="installing-kubernetes">Installing Kubernetes</h1>
+        <h2 id="kubernetes-configuration">Kubernetes Configuration.</h2>
+        <p>Four major installation types.</p>
+        <ul>
+            <li>All-in-One Single-Node Installation.
+                <ul>
+                    <li>Master and worker are installed and running on a single-node</li>
+                    <li>Useful for learning, development and testing.</li>
+                    <li>Should not be used in production.</li>
+                    <li>For instance Minikube.</li>
+                </ul>
+            </li>
+            <li>Single-Node etcd, Single-Master and Multi-Worker Installation.</li>
+            <li>Single-Node etcd, Multi-Master and Multi-Worker Installation.
+                <ul>
+                    <li>Multiple Master nodes configured in HA mode.</li>
+                    <li>Multiple worker nodes are connected to the master nodes.</li>
+                </ul>
+            </li>
+            <li>Multi-Node etcd, Multi-Master and Multi-Worker Installation.
+                <ul>
+                    <li>etcd is configured in clustered HA mode.</li>
+                    <li>Master nodes are all configured in HA mode, connecting to multiple worker nodes.</li>
+                    <li>This is the most advanced and recommended production setup.</li>
+                </ul>
+            </li>
+        </ul>
+
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
