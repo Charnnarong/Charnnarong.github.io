@@ -47,6 +47,7 @@
         <a class="btn-primary" href="../index.html">Home</a>
     </div>
     <div class="vscode-light note-container">
+
         <h1 id="installing-kubernetes">Installing Kubernetes</h1>
         <h2 id="kubernetes-configuration">Kubernetes Configuration.</h2>
         <p>Four major installation types.</p>
@@ -127,6 +128,81 @@
                     <li>Need underlying OS like RHEL, CoreOS, CentOS, Fedora, Ubuntu, etc.</li>
                     <li>Most of the tools used to install K8s on VMs can be used with bare metal installations as well.
                     </li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="cloud-installation">Cloud Installation</h2>
+        <ul>
+            <li>Hosted Solutions<br>
+                Any given software is completely managed by the provider. The user pay hosting and management charges.
+                Some of the vendors providing hosted solutions for k8s are :
+                <ul>
+                    <li><a href="https://cloud.google.com/kubernetes-engine/">Google Kubernetes Engine</a> (GKE)</li>
+                    <li><a href="https://azure.microsoft.com/en-us/services/kubernetes-service/">Azure Kubernetes
+                            Service</a> (AKS)</li>
+                    <li><a href="https://aws.amazon.com/eks/">Amazon Elastic Container Servcie for Kubernetes</a> (EKS)
+                    </li>
+                    <li><a href="https://www.digitalocean.com/products/kubernetes/">DigitalOcean Kubernetes</a></li>
+                    <li><a href="https://www.openshift.com/products/dedicated/">OpenShift Dedicated</a></li>
+                    <li><a href="https://platform9.com/managed-kubernetes/">Platform9</a></li>
+                    <li><a
+                            href="https://cloud.ibm.com/docs/containers?topic=containers-getting-started#container_index">IBM
+                            Cloud Kubernetes Service</a></li>
+                </ul>
+            </li>
+            <li>Turnkey Cloud Solutions.<br>
+                install Kubernetes with just a few commands on an underlying IaaS platform, such as :
+                <ul>
+                    <li><a href="https://kubernetes.io/docs/setup/turnkey/gce/">Google Compute Engine</a>(GCE)</li>
+                    <li><a href="https://kubernetes.io/docs/setup/turnkey/aws/">Amazon AWS</a>(AWS EC2)</li>
+                    <li><a href="https://kubernetes.io/docs/setup/turnkey/azure/">Microsoft Azure</a>(AKS)</li>
+                </ul>
+            </li>
+            <li>Turnkey On-Premise Solutions<br>
+                Install Kubernetes on secure internal private clouds with just a few commands:
+                <ul>
+                    <li><a href="https://cloud.google.com/gke-on-prem/">GKE On-Prem</a> by Google Cloud</li>
+                    <li><a href="https://www.ibm.com/cloud/private">IBM Cloud Private</a></li>
+                    <li>[OpenShift Container Platform] (<a
+                            href="https://www.openshift.com/products/container-platform/">https://www.openshift.com/products/container-platform/</a>)
+                        by Red Hat</li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="kubernetes-installation-toolsresources-official-docs">Kubernetes Installation Tools/Resources <a
+                href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/">official
+                docs</a></h2>
+        <ul>
+            <li><a href="https://github.com/kubernetes/kubeadm">kubeadm</a>
+                <ul>
+                    <li>first-class citizen on the k8s ecosystem.</li>
+                    <li>recommended way to bootstrap a single- or multi-node k8s cluster.</li>
+                    <li>kubeadm doesn't support the provisioning of hosts.</li>
+                </ul>
+            </li>
+            <li><a href="https://kubernetes.io/docs/setup/custom-cloud/kubespray/">kubespray</a>
+                <ul>
+                    <li>formerly known as kargo</li>
+                    <li>based on Ansible.</li>
+                    <li>It is a <a href="https://github.com/kubernetes-sigs/kubespray">Kubernetes Incubator</a> project
+                    </li>
+                    <li>Install Highly Available K8s on AWS, GCE, Azure, OpenStack, or bare metal.</li>
+                </ul>
+            </li>
+            <li><a href="https://kubernetes.io/docs/setup/custom-cloud/kops/">kops</a>
+                <ul>
+                    <li>create, destroy, upgrade and maintain production-grade, highly-available k8s cluster from the
+                        command line.</li>
+                    <li>It can provision the machines.</li>
+                    <li>AWS is officially supported.</li>
+                    <li>Support for GCE is in beta.</li>
+                    <li>Support for VMware vSphere in alpha stage.</li>
+                </ul>
+            </li>
+            <li><a href="https://github.com/kubernetes-incubator/kube-aws">kube-aws</a>
+                <ul>
+                    <li>create, upgrade and destroy k8s clusters on AWS from the command line.</li>
+                    <li>It is also K8s Incubator project.</li>
                 </ul>
             </li>
         </ul>
