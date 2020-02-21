@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Kubernetes Architecture</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+    <style>
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item-checkbox {
+            margin-left: -20px;
+            vertical-align: middle;
+        }
+    </style>
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+
+        <h1 id="minikube">Minikube</h1>
+        <p><img src="https://i.imgur.com/fhOEHtN.png" alt="Imgur"></p>
+        <ul>
+            <li>Run on local machine; Linux, macOS or Windows workstation.</li>
+            <li><a href="https://en.wikipedia.org/wiki/Hypervisor">Type-2 Hypervisor</a> should be installed on the
+                local wrokstation in order to take advantage of all the features Minikube has to offer.</li>
+            <li>Requirement outline on local workstation
+                <ul>
+                    <li><a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">kubectl</a>
+                        <ul>
+                            <li>It is a binary used to access and manage any k8s cluster.</li>
+                            <li>Install separately from Minikube.</li>
+                        </ul>
+                    </li>
+                    <li>Type-2 Hypervisor
+                        <ul>
+                            <li>On Linux <a href="https://www.virtualbox.org/wiki/Downloads">VirtualBox</a> or <a
+                                    href="https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver">KVM</a>
+                            </li>
+                            <li>on macOS VirtualBox, <a
+                                    href="https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver">HyperKit</a>,
+                                or <a href="http://www.vmware.com/products/fusion.html">VMware Fusion</a></li>
+                            <li>on Windows Virtualbox or <a
+                                    href="https://minikube.sigs.k8s.io/docs/reference/drivers/">Hyper-V</a></li>
+                        </ul>
+                        <pre><code><code><div>Noted: Minikube supports a --vm-driver=none option. Which require Docker installed, but no hypervisor installation. If using the option, be sure to specify a bridge network for Docker. Otherwise, it might change between network restarts, causing loss of connectivity to your cluster.
+</div></code></code></pre>
+                    </li>
+                    <li>VT-x/AMD-v virtualization must be enabled on the local workstation in BIOS</li>
+                    <li>Internet connection of first Minikube run. Subsequent runs will also requires Internet
+                        connection as application may need it.</li>
+                </ul>
+            </li>
+        </ul>
+        <pre><code><code><div>Noted.
+    - Minikube doesn't designed to run on VMs.
+    - It is designed to run on Host OS directly.
+</div></code></code></pre>
+        <p><img src="https://i.imgur.com/94lVhLr.png" alt="Imgur"></p>
+
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
