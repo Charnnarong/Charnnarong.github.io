@@ -11,9 +11,7 @@
     --link-color-click: #0382c2;
 }
 
-*,
-::after,
-::before {
+*, ::after, ::before {
     margin: 0;
     padding: 0;
     box-sizing: inherit;
@@ -36,9 +34,10 @@ footer {
 }
 
 body {
+    width: 80vw;
+    margin: 0 auto 3rem auto;
     line-height: 1.58;
     font-family: 'Literata', sans-serif;
-    /* font-size: calc(0.875em + 0.4vmin); */
     font-weight: 400;
     box-sizing: inherit;
 }
@@ -61,11 +60,6 @@ body {
     border-bottom: dashed bisque;
 }
 
-body {
-    width: 80vw;
-    margin: 0 auto;
-}
-
 .blog {
     margin-top: 10vh;
 }
@@ -80,6 +74,10 @@ body {
 
 .blogs-list__container>ul {
     list-style: none;
+}
+
+.blogs-list__container>ul>li {
+    margin-top: .8rem;
 }
 
 .nav-home {
@@ -113,13 +111,15 @@ body {
     white-space: pre-wrap;
 }
 
-.note-container ul{
+.note-container ul {
     list-style-position: inside;
 }
+
 .note-container>ul>li>ul>li {
     margin-left: 4rem;
     list-style-type: none;
 }
+
 .note-container>ul>li>ul>li::before {
     content: "\2501";
     padding-right: 1rem;
@@ -132,6 +132,7 @@ body {
 .note-container>ul>li>ul>li>ul>li {
     list-style-type: none;
 }
+
 .note-container>ul>li>ul>li>ul>li::before {
     font-size: 1.2em;
     content: "\25B8";
@@ -171,6 +172,15 @@ body {
 
 .note-quote ul {
     padding-left: 1.25rem;
+}
+
+.note-group {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border: 1px dashed rgba(0, 0, 0, 0.5);;
+    padding: 1rem;
+    border-radius: .5rem;
 }
 
 .btn-primary {
@@ -266,11 +276,22 @@ body {
     ;
 }
 
-.ipcms-table>table,
-th,
-td {
+.ipcms-table>table, th, td {
     border: 1px solid rgba(0, 0, 0, 0.3);
     padding: 0.5rem;
 }
 
 /* ---- <<< Interprocess Communication ----- */
+
+.list-group {
+    display: inline-flex;
+    padding: 1rem;
+    border: 1px dashed;
+    border-color: rgba(0, 0, 0, 0.5);
+    border-radius: .2rem;
+    background-color: rgba(228, 220, 220, 0.18);
+}
+
+.list-group ul li {
+    list-style-type: none;
+}
