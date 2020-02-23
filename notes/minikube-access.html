@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Accessing Minikube</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+    <style>
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item-checkbox {
+            margin-left: -20px;
+            vertical-align: middle;
+        }
+    </style>
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+
+        <h1 id="accessing-minikube">Accessing Minikube.</h1>
+        <ul>
+            <li>
+                <p>Three methods to access k8s cluster</p>
+                <ul>
+                    <li>Command Line Interface (CLI) tools and scripts</li>
+                    <li>Web-based User Interface (Web UI) from a web browser</li>
+                    <li>APIs from CLI or programmatically.</li>
+                </ul>
+            </li>
+            <li>
+                <p>Accessing Minikube: Commandline Interface (CLI)</p>
+                <ul>
+                    <li><a href="https://kubernetes.io/docs/reference/kubectl/overview/">kubectl</a> is the CLI client
+                        to manage cluster resources and applications.</li>
+                    <li>can be used standalone or part of scripts and automation tools.</li>
+                    <li>kubectl can be used remotely from anywhere to access a cluster.</li>
+                </ul>
+            </li>
+            <li>
+                <p>Accessing Minikube: Web-based User Interface (Web UI)</p>
+                <ul>
+                    <li><a href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/">Kubernetes
+                            Dashboard</a> provices Web UI to interact with a k8s cluster to manage resoruces and
+                        containerized applications.</li>
+                </ul>
+            </li>
+            <li>
+                <p>Accessing Minikube: APIs</p>
+                <ul>
+                    <li>we can directly connect to the API server using its API endpoints and send commands to it.</li>
+                    <li>Http Api space of k8s can be divided into three independent groups:
+                        <ul>
+                            <li>Core Group <strong>(/api/v1)</strong><br>
+                                This group includes object such as Pods, Services, nodes, namespaces, configmanps,
+                                secrets, etc.</li>
+                            <li>Named Group<br>
+                                This group includes objects in <strong>/api/$NAME/$VERSION</strong> format<br>
+                                <strong>$VERSION</strong> implies lebels of stability and support:<br>
+                                <em>Alpha level</em> : maybe dropped at any point in time without noticed. For example
+                                <strong>/api/batch/v2alpha1</strong>.<br>
+                                <em>Beta level</em>: well-tested, but the semantics of objects may change in
+                                incompatible ways in a subsequent beta or statble release. For exampel
+                                <strong>/apis/certificates.k8s.io/v1beta1</strong><br>
+                                <em>Stable level</em> : appears in released software for many subsequent versions. For
+                                example, <strong>/apis/networking.k8s.io/v1</strong>.</li>
+                            <li>System-wide<br>
+                                This group consists of system-wide API endpoints, like <strong>/healthz</strong>,
+                                <strong>/logs</strong>, <strong>/metrics</strong>, <strong>/ui,</strong> etc.</li>
+                        </ul>
+                    </li>
+                    <li>We can either connect to an API server directly via calling the respective API endpoints or via
+                        the CLI/Web UI.</li>
+                </ul>
+            </li>
+            <li>
+                <p>Kubectl Configuration file</p>
+            </li>
+        </ul>
+        <pre><code class="language-bash"><div>$ ls -la | grep kube
+drwx------+ 1 Kone           None                 0 Feb 22 11:56 .kube
+drwxrwx---+ 1 Administrators None                 0 Feb 22 11:12 .minikube
+</div></code></pre>
+        <ul>
+            <li>inspect it.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ tree .kube /F
+Folder PATH listing
+Volume serial number is 36D7-3774
+C:\USERS\KONE\.KUBE
+│   config
+│
+└───http-cache
+    └───.diskv-temp
+</div></code></pre>
+        <ul>
+            <li>cat it.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ cat .kube/config
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: C:\Users\Kone\.minikube\ca.crt
+    server: https://192.168.99.101:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: C:\Users\Kone\.minikube\client.crt
+    client-key: C:\Users\Kone\.minikube\client.key
+</div></code></pre>
+        <ul>
+            <li>View it.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: C:\Users\Kone\.minikube\ca.crt
+    server: https://192.168.99.101:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: C:\Users\Kone\.minikube\client.crt
+    client-key: C:\Users\Kone\.minikube\client.key
+</div></code></pre>
+        <ul>
+            <li>check cluster info</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl cluster-info
+Kubernetes master is running at https://192.168.99.101:8443
+KubeDNS is running at https://192.168.99.101:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+</div></code></pre>
+        <ul>
+            <li><strong>~/.kube/config</strong> file gets created automatically when installed Minikube.</li>
+            <li>Created config file manually or re-configured to suit various networking and client/server setups is not
+                uncommon.</li>
+        </ul>
+        <h2 id="open-dashboard">Open Dashboard</h2>
+        <pre><code class="language-bash"><div>$ minikube dashboard
+* Enabling dashboard ...
+* Verifying dashboard health ...
+* Launching proxy ...
+* Verifying proxy health ...
+* Opening http://127.0.0.1:57996/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/ <span class="hljs-keyword">in</span> your default browser...
+
+</div></code></pre>
+        <h2 id="kubectl-proxy">kubectl proxy</h2>
+        <p>Issuing the <code>kubectl proxy</code> command, kubectl authenticates with the API server on the master node
+            and makes the Dashboard available on a slightly different URL than the one earlier.</p>
+        <pre><code class="language-bash"><div>$ kubectl --<span class="hljs-built_in">help</span> | grep proxy
+  proxy          Run a proxy to the Kubernetes API server
+
+$ kubectl proxy
+Starting to serve on 127.0.0.1:8001
+</div></code></pre>
+        <p>then we can access via<br>
+            <a
+                href="http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/cluster?namespace=default">http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/#/cluster?namespace=default</a>
+        </p>
+        <p>Once we stop the proxy (CTRL + C) the Dashboard is no longer accessible.</p>
+        <h2 id="apis---with-kubectl-proxy">APIs - with 'kubectl proxy'</h2>
+        <p>When <code>kubectl proxy</code> is running, we can send request to the API over the localhost on the proxy
+            port 8001</p>
+        <pre><code class="language-bash"><div>$ curl http://localhost:8001/  
+{
+  <span class="hljs-string">"paths"</span>: [
+    <span class="hljs-string">"/api"</span>,
+    <span class="hljs-string">"/api/v1"</span>,
+    <span class="hljs-string">"/apis"</span>,
+    <span class="hljs-string">"/apis/"</span>,
+    <span class="hljs-string">"/apis/admissionregistration.k8s.io"</span>,
+    <span class="hljs-string">"/apis/admissionregistration.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/admissionregistration.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/apiextensions.k8s.io"</span>,
+    <span class="hljs-string">"/apis/apiextensions.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/apiextensions.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/apiregistration.k8s.io"</span>,
+    <span class="hljs-string">"/apis/apiregistration.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/apiregistration.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/apps"</span>,
+    <span class="hljs-string">"/apis/apps/v1"</span>,
+    <span class="hljs-string">"/apis/authentication.k8s.io"</span>,
+    <span class="hljs-string">"/apis/authentication.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/authentication.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/authorization.k8s.io"</span>,
+    <span class="hljs-string">"/apis/authorization.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/authorization.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/autoscaling"</span>,
+    <span class="hljs-string">"/apis/autoscaling/v1"</span>,
+    <span class="hljs-string">"/apis/autoscaling/v2beta1"</span>,
+    <span class="hljs-string">"/apis/autoscaling/v2beta2"</span>,
+    <span class="hljs-string">"/apis/batch"</span>,
+    <span class="hljs-string">"/apis/batch/v1"</span>,
+    <span class="hljs-string">"/apis/batch/v1beta1"</span>,
+    <span class="hljs-string">"/apis/certificates.k8s.io"</span>,
+    <span class="hljs-string">"/apis/certificates.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/coordination.k8s.io"</span>,
+    <span class="hljs-string">"/apis/coordination.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/coordination.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/discovery.k8s.io"</span>,
+    <span class="hljs-string">"/apis/discovery.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/events.k8s.io"</span>,
+    <span class="hljs-string">"/apis/events.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/extensions"</span>,
+    <span class="hljs-string">"/apis/extensions/v1beta1"</span>,
+    <span class="hljs-string">"/apis/networking.k8s.io"</span>,
+    <span class="hljs-string">"/apis/networking.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/networking.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/node.k8s.io"</span>,
+    <span class="hljs-string">"/apis/node.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/policy"</span>,
+    <span class="hljs-string">"/apis/policy/v1beta1"</span>,
+    <span class="hljs-string">"/apis/rbac.authorization.k8s.io"</span>,
+    <span class="hljs-string">"/apis/rbac.authorization.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/rbac.authorization.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/scheduling.k8s.io"</span>,
+    <span class="hljs-string">"/apis/scheduling.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/scheduling.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/apis/storage.k8s.io"</span>,
+    <span class="hljs-string">"/apis/storage.k8s.io/v1"</span>,
+    <span class="hljs-string">"/apis/storage.k8s.io/v1beta1"</span>,
+    <span class="hljs-string">"/healthz"</span>,
+    <span class="hljs-string">"/healthz/autoregister-completion"</span>,
+    <span class="hljs-string">"/healthz/etcd"</span>,
+    <span class="hljs-string">"/healthz/log"</span>,
+    <span class="hljs-string">"/healthz/ping"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/apiservice-openapi-controller"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/apiservice-registration-controller"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/apiservice-status-available-controller"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/bootstrap-controller"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/crd-informer-synced"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/generic-apiserver-start-informers"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/kube-apiserver-autoregistration"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/rbac/bootstrap-roles"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/scheduling/bootstrap-system-priority-classes"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/start-apiextensions-controllers"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/start-apiextensions-informers"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/start-cluster-authentication-info-controller"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/start-kube-aggregator-informers"</span>,
+    <span class="hljs-string">"/healthz/poststarthook/start-kube-apiserver-admission-initializer"</span>,
+    <span class="hljs-string">"/livez"</span>,
+    <span class="hljs-string">"/livez/autoregister-completion"</span>,
+    <span class="hljs-string">"/livez/etcd"</span>,
+    <span class="hljs-string">"/livez/log"</span>,
+    <span class="hljs-string">"/livez/ping"</span>,
+    <span class="hljs-string">"/livez/poststarthook/apiservice-openapi-controller"</span>,
+    <span class="hljs-string">"/livez/poststarthook/apiservice-registration-controller"</span>,
+    <span class="hljs-string">"/livez/poststarthook/apiservice-status-available-controller"</span>,
+    <span class="hljs-string">"/livez/poststarthook/bootstrap-controller"</span>,
+    <span class="hljs-string">"/livez/poststarthook/crd-informer-synced"</span>,
+    <span class="hljs-string">"/livez/poststarthook/generic-apiserver-start-informers"</span>,
+    <span class="hljs-string">"/livez/poststarthook/kube-apiserver-autoregistration"</span>,
+    <span class="hljs-string">"/livez/poststarthook/rbac/bootstrap-roles"</span>,
+    <span class="hljs-string">"/livez/poststarthook/scheduling/bootstrap-system-priority-classes"</span>,
+    <span class="hljs-string">"/livez/poststarthook/start-apiextensions-controllers"</span>,
+    <span class="hljs-string">"/livez/poststarthook/start-apiextensions-informers"</span>,
+    <span class="hljs-string">"/livez/poststarthook/start-cluster-authentication-info-controller"</span>,
+    <span class="hljs-string">"/livez/poststarthook/start-kube-aggregator-informers"</span>,
+    <span class="hljs-string">"/livez/poststarthook/start-kube-apiserver-admission-initializer"</span>,
+    <span class="hljs-string">"/logs"</span>,
+    <span class="hljs-string">"/metrics"</span>,
+    <span class="hljs-string">"/openapi/v2"</span>,
+    <span class="hljs-string">"/readyz"</span>,
+    <span class="hljs-string">"/readyz/autoregister-completion"</span>,
+    <span class="hljs-string">"/readyz/etcd"</span>,
+    <span class="hljs-string">"/readyz/log"</span>,
+    <span class="hljs-string">"/readyz/ping"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/apiservice-openapi-controller"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/apiservice-registration-controller"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/apiservice-status-available-controller"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/bootstrap-controller"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/crd-informer-synced"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/generic-apiserver-start-informers"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/kube-apiserver-autoregistration"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/rbac/bootstrap-roles"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/scheduling/bootstrap-system-priority-classes"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/start-apiextensions-controllers"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/start-apiextensions-informers"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/start-cluster-authentication-info-controller"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/start-kube-aggregator-informers"</span>,
+    <span class="hljs-string">"/readyz/poststarthook/start-kube-apiserver-admission-initializer"</span>,
+    <span class="hljs-string">"/readyz/shutdown"</span>,
+    <span class="hljs-string">"/version"</span>
+  ]
+}
+</div></code></pre>
+        <h2 id="api---without-kubectl-proxy--token">API - without 'kubectl proxy' : <strong>Token</strong></h2>
+        <ul>
+            <li>When not using the <code>kubectl proxy</code>, we need to authenticate to the API server when sending
+                API requests.</li>
+            <li>Authenticate by providing a Bearer Token when issuing a <code>curl</code>, or by providing a set of
+                <strong>keys</strong> and <strong>certificates</strong>.</li>
+            <li>A <strong>Bearer Token</strong> is an <strong>access token</strong>
+                <pre><code class="language-bash"><div>$ kubectl get secrets -n kube-system | grep default
+default-token-bdmlz                              kubernetes.io/service-account-token   3      131m
+</div></code></pre>
+                then
+                <pre><code class="language-bash"><div>$ kubectl describe secret -n kube-system default-token-bdmlz
+Name:         default-token-bdmlz
+Namespace:    kube-system
+Labels:       &lt;none&gt;
+Annotations:  kubernetes.io/service-account.name: default
+            kubernetes.io/service-account.uid: e104bbfa-7908-4495-bae5-14c95d0246cd
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:     1066 bytes
+namespace:  11 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IlNaZ1dUVUZ6Q01oTG05VUh3SEVpa2YzMkNvbXQ2YjdLdzdfb3RFdm1RTEEifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJkZWZhdWx0LXRva2VuLWJkbWx6Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImRlZmF1bHQiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJlMTA0YmJmYS03OTA4LTQ0OTUtYmFlNS0xNGM5NWQwMjQ2Y2QiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06ZGVmYXVsdCJ9.pjyLX4mGRafkIFqJko9VHMkhFTYU-Db6wWpADQWcAFMyVOATOyawY7dMCQ4O3xB-QKCoN3sckegB_NqWO-5GYe8eixwi66SkqyHnduuyaASymGqJaESQvrF7KuvMh8gLLGgjFDZ3shUKa3qYdasK8rxyYRjkcPo55aVBA6cVZ0cL_TxAfe0_zlaIqFDJ0aNR4L-G5x0XvotJ6P9-xMADaC2GXFkgw7PXHLu0XTlxaWCe6ORDb0kpJSiJ4QRCbUABXfUU2k_6vEZRDswc32XbHQvmE0OF3LSg-Fu7ZpA8AZ3NHtwqit0XkZDJYm6HIfVEPlp6xRLn_Hart8QyW9VdCg
+
+</div></code></pre>
+                now we get token. Then check api server
+                <pre><code class="language-bash"><div>$ kubectl cluster-info
+Kubernetes master is running at https://192.168.99.101:8443
+KubeDNS is running at https://192.168.99.101:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+</div></code></pre>
+                make a varialble to terminal (in Windows. it would be easier in unix system :p )
+                <pre><code class="language-bash"><div>$ <span class="hljs-built_in">set</span> TOKEN=eyJhbGciOiJSUzI1NiIsImt....8QyW9VdCg
+
+$ <span class="hljs-built_in">set</span> APISERVER=https://192.168.99.101:8443
+
+$ <span class="hljs-built_in">echo</span> %TOKEN%
+eyJhbGciOiJSUzI1NiIsImtpZ...
+...
+...8QyW9VdCg
+
+$ <span class="hljs-built_in">echo</span> %APISERVER%
+https://192.168.99.101:8443
+</div></code></pre>
+                Then curl it.
+                <pre><code class="language-bash"><div>$ curl -k %APISERVER% --header <span class="hljs-string">"Authorization: Bearer %TOKEN%"</span>
+{
+    <span class="hljs-string">"paths"</span>: [
+        <span class="hljs-string">"/api"</span>,
+        <span class="hljs-string">"/api/v1"</span>,
+        <span class="hljs-string">"/apis"</span>,
+        ...
+        ...
+        <span class="hljs-string">"/readyz/shutdown"</span>,
+        <span class="hljs-string">"/version"</span>
+    ]
+}
+</div></code></pre>
+            </li>
+        </ul>
+        <h2 id="api---without-kubectl-proxy--certificate">API - without 'kubectl proxy' : <strong>Certificate</strong>
+        </h2>
+        <p>check where they are.</p>
+        <pre><code class="language-bash"><div>$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: C:\Users\Kone\.minikube\ca.crt
+    server: https://192.168.99.101:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: C:\Users\Kone\.minikube\client.crt
+    client-key: C:\Users\Kone\.minikube\client.key
+
+</div></code></pre>
+        <p>we need to encode base64 for <strong>ca.crt</strong>, <strong>client.crt</strong> and
+            <strong>client.key</strong></p>
+        <pre><code class="language-bash"><div>Kone@KONE C:\Users\Kone\.minikube
+// TODO 
+// will figure out how to curl it with certificates
+</div></code></pre>
+
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
