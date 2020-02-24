@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Accessing Minikube</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+    <style>
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item-checkbox {
+            margin-left: -20px;
+            vertical-align: middle;
+        }
+    </style>
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+
+        <h1 id="kubernetes-building-blocks">Kubernetes Building Blocks</h1>
+        <h2 id="k8s-object-model">k8s Object Model</h2>
+        <ul>
+            <li>Object model representing different persistent entities in the k8s cluster.</li>
+            <li>Those entities describes:
+                <ul>
+                    <li>What containerized applications we are running and on which node.</li>
+                    <li>Application resources consumption.</li>
+                    <li>Different policies attached to applications, like restart/upgrade policies, fault tolerance,
+                        etc.</li>
+                </ul>
+            </li>
+            <li>With each object we declare our intent spec section.</li>
+            <li>k8s system manages the status section for objects, where it records the actual state of the object.</li>
+            <li>k8s Control Plane tries to match the object's actual state to the object's desired state.</li>
+            <li>example of k8s object are:
+                <ul>
+                    <li>Pods</li>
+                    <li>ReplicaSets</li>
+                    <li>Deployments</li>
+                    <li>Namespaces</li>
+                    <li>etc.</li>
+                </ul>
+            </li>
+            <li>Object defined below the spec field.</li>
+            <li>Object's configuration has to be submitted to the K8s API server.</li>
+            <li>The <code>spec</code> section describes the disired state, along with some basic information, such as
+                the object's name.</li>
+            <li>The API request to create an object must have the spec section, as well as other details.</li>
+            <li>API servcer accepts object definition files in a JSON format.</li>
+            <li>Normally we use YAML format for the definition, then kubectl will convert into JSON payload and sent to
+                the API server.</li>
+            <li>Example of Deployment object's configuration in YAML :
+                <pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">nginx-deployment</span>
+<span class="hljs-attr">    labels:</span>
+<span class="hljs-attr">        app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">    replicas:</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">    selector:</span>
+<span class="hljs-attr">        matchLabels:</span>
+<span class="hljs-attr">            app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    template:</span>
+<span class="hljs-attr">        metadata:</span>
+<span class="hljs-attr">            labels:</span>
+<span class="hljs-attr">                app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">        spec:</span>
+<span class="hljs-attr">            containers:</span>
+<span class="hljs-attr">            - name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">              image:</span> <span class="hljs-attr">nginx:1.15.11</span>
+<span class="hljs-attr">              ports:</span>
+<span class="hljs-attr">              - containerPort:</span> <span class="hljs-number">80</span>
+</div></code></pre>
+            </li>
+            <li><code>apiVersion</code> field:
+                <ul>
+                    <li>first required field.</li>
+                    <li>it specifies the API endpoint on the API server</li>
+                    <li>must match an existing version for the object type defined.</li>
+                </ul>
+            </li>
+            <li><code>kind</code> :
+                <ul>
+                    <li>the second required field.</li>
+                    <li>specifying the object type. ( Deployment ), but it can be Pod, Replicaset, Namespace, Service,
+                        etc.</li>
+                </ul>
+            </li>
+            <li><code>metadata</code> :
+                <ul>
+                    <li>the third required field.</li>
+                    <li>holds the object's basic information.</li>
+                </ul>
+            </li>
+            <li><code>spec</code> (the first level, not the spec.template.spec)
+                <ul>
+                    <li>defining the desired state of the Deployment object.</li>
+                    <li>in example: 3 Pods are running at any given time.</li>
+                    <li>Pods are created using the Pods Template defined in <code>spec.template</code>.</li>
+                    <li>A nested object, such as the Pod being part of a Deployment, retains its <code>metadata</code>
+                        and <code>spec</code> and loses the <code>apiVersion</code> and <code>kind</code> - both being
+                        replaced by <code>tempalte</code>.</li>
+                    <li>In <code>spec.template.spec</code> we define the desired state of the Pod.</li>
+                    <li>Example Pod creates a single container running the nginx:1.15.11 image from <a
+                            href="https://hub.docker.com/_/nginx">Docker Hub</a></li>
+                    <li>Once the Deployment object is created, the k8s system attatches the <code>status</code> field to
+                        the object.</li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="pods">Pods</h2>
+        <ul>
+            <li>The smallest and simpletst k8s object.</li>
+            <li>the unit of deployment in k8s</li>
+            <li>represent a single instance of the application.</li>
+            <li>A logical collection of one or more containers, which:
+                <ul>
+                    <li>Are scheduled together on the same host with the Pod</li>
+                    <li>Share the same netwrok namespace</li>
+                    <li>Have access to mount the same external storage (volumes)<br>
+                        <img src="https://i.imgur.com/3AFEDvb.png" alt="Imgur"></li>
+                </ul>
+            </li>
+            <li>Pods are ephemeral in nature.</li>
+            <li>Pods do not hava the capability to self-heal by themselves.</li>
+            <li>Controllers handle Pod's replication, fault tolerance, self-healing etc.</li>
+            <li>Example of controllers are Deployments, ReplicaSets, ReplicaitonControllers etc.</li>
+            <li>We attatch a nested Pod's specification to a controller object using the Pod Template.</li>
+            <li>Example of a Pod object's configuration in YAML format:
+                <pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">name:</span> <span class="hljs-string">nginx-pod</span>
+<span class="hljs-attr">labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">containers:</span>
+<span class="hljs-attr">- name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    image:</span> <span class="hljs-attr">nginx:1.15.11</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+</div></code></pre>
+                <ul>
+                    <li><code>apiVersion</code> field must specify <strong>v1</strong> for the <strong>Pod</strong>
+                        object definition.</li>
+                    <li>The second required field is <strong>kind</strong> specifying the <strong>Pod</strong> object
+                        type.</li>
+                    <li>The third required field <strong>metadata</strong>, hold the object name and label.</li>
+                    <li>the fourth required field <strong>spec</strong> marks the beginning of the block defining the
+                        desired state of the Pod object - also named the <strong>PodSpec</strong></li>
+                    <li>From Example above: it create a single container running the nginx:1.15.11 imge from Docker Hub.
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="labels">Labels</h2>
+        <ul>
+            <li>Labels are key-value pairs attatched to k8s object e.g. Pods, ReplicaSets.</li>
+            <li>Labels are used to organaize and select a subset of objects based on the requirements in palce.</li>
+            <li>Many objects can have the same Label(s).</li>
+            <li>Labels(s) do not provide uniqueness to objects.</li>
+            <li>Controllers use Labels to logically group together decoupled objects, rather than using object's names
+                or IDs.<br>
+                <img src="https://i.imgur.com/xt1Y0FD.png" alt="Imgur">
+                <ul>
+                    <li>In the image above, we have used two label keys: <strong>app</strong> and <strong>env</strong>.
+                    </li>
+                    <li>The lavel *<em>evn=dev</em> logically selects and groups the top two Pods.</li>
+                    <li>The Label <strong>app=frontend</strong> logically selects and groups the left two Pods.</li>
+                    <li>We can select one of the four Pods - bottom left, by selecting two Labels:
+                        <strong>app=frontend</strong> and <strong>env=qa</strong></li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="label-selectors">Label Selectors</h2>
+        <ul>
+            <li>Controller use <a
+                    href="https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors">Label
+                    Selectors</a> to select a subset of objects. K8s support <strong>two types</strong> of Selectors:
+            </li>
+            <li><strong>Equality-Based Selectors</strong>
+                <ul>
+                    <li>allow filtering of objects based on Label keys and values.</li>
+                    <li>Matching is achieved using the <strong>=</strong> , <strong>==</strong>(equals, used
+                        interchangeably), or <strong>!=</strong>(not equals) operators.<br>
+                        Example: <strong>env==dev</strong> or <strong>env=dev</strong> selecting the objects where the
+                        <strong>env</strong> Label key is set to value <strong>dev</strong></li>
+                </ul>
+            </li>
+            <li><strong>Set-Based Selector</strong>
+                <ul>
+                    <li>filtering of ojbects based on a set of values.</li>
+                    <li>We can use <strong>In</strong>, <strong>NotIn</strong> operators for <strong>Label
+                            values</strong>.</li>
+                    <li>Uses <strong>Exists</strong>, <strong>DoesNotExist</strong> operators for <strong>Label
+                            keys</strong>.</li>
+                    <li>Example: <strong>env in (dev, qa)</strong> . &lt;-- selecting objects where the
+                        <strong>env</strong> Label is set to either <strong>dev</strong> or <strong>qa</strong></li>
+                    <li>Example: <strong>!app</strong> &lt;-- select objects with no Label key <strong>app</strong>.
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="replicationcontrollers-ref">ReplicationControllers (<a
+                href="https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/">ref</a>)</h2>
+        <ul>
+            <li><strong>No longer a recommended method</strong>.</li>
+            <li>Example:
+                <pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">ReplicationController</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">replicas:</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">selector:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">template:</span>
+<span class="hljs-attr">    metadata:</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    labels:</span>
+<span class="hljs-attr">        app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    spec:</span>
+<span class="hljs-attr">    containers:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">        image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">        ports:</span>
+<span class="hljs-attr">        - containerPort:</span> <span class="hljs-number">80</span>
+
+</div></code></pre>
+            </li>
+            <li>it is a controller that ensures a specified number of replicas of a Pod is running at any given time.
+            </li>
+            <li>if there are more Pods than the desired count, a replication controller would terminate the extra Pods.
+            </li>
+            <li>If there are fewer Pods, then the replication controller would create more Pods to match the desired
+                count.</li>
+            <li><strong>Generally, we don't deploy a Pod independently</strong>, as it would not be able to re-start
+                itself if terminated in error.</li>
+            <li>The recommended method is to use some type of replication controllers to create and manage Pods.</li>
+            <li>The default controller is a Deployment which configures a ReplicaSet to mange Pod's lifecycle.</li>
+        </ul>
+        <h2 id="replicasets">ReplicaSets</h2>
+        <ul>
+            <li>A <a href="https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/">ReplicaSet</a> is the
+                next-generation ReplicationController.</li>
+            <li>Example :
+                <pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">ReplicaSet</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">name:</span> <span class="hljs-string">frontend</span>
+<span class="hljs-attr">labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">guestbook</span>
+<span class="hljs-attr">    tier:</span> <span class="hljs-string">frontend</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-comment"># modify replicas according to your case</span>
+<span class="hljs-attr">replicas:</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">selector:</span>
+<span class="hljs-attr">    matchLabels:</span>
+<span class="hljs-attr">    tier:</span> <span class="hljs-string">frontend</span>
+<span class="hljs-attr">template:</span>
+<span class="hljs-attr">    metadata:</span>
+<span class="hljs-attr">    labels:</span>
+<span class="hljs-attr">        tier:</span> <span class="hljs-string">frontend</span>
+<span class="hljs-attr">    spec:</span>
+<span class="hljs-attr">    containers:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">php-redis</span>
+<span class="hljs-attr">        image:</span> <span class="hljs-string">gcr.io/google_samples/gb-frontend:v3</span>
+</div></code></pre>
+            </li>
+            <li>It support both equality- and set-based selectors. (whereas ReplicationController s only supoort
+                equality-based Selectors)</li>
+            <li>With the help of ReplicaSet, we can scale the nubmer of Pods running a specific container application
+                image.</li>
+            <li>Scalling can be accomplished manually or through the use of an autoscaller</li>
+            <li>Example of graphical representaiton of a ReplicaSet, where we have set the replica count to 3 for a
+                Pod.<br>
+                <img src="https://i.imgur.com/6ScUAGs.png" alt="Imgur"><br>
+                <em>ReplicaSet (Current State and Desired State are the same)</em><br>
+                Assume that one of the Pods is forced to terminated(due to insufficient resoruces, timeout, etc) and the
+                current state is no longer matching the desired state.<br>
+                <img src="https://i.imgur.com/TrAc47w.png" alt="Imgur"><br>
+                <em>ReplicaSet (Current State and Desired State are different)</em><br>
+                The ReplicaSet will detect that the current state is no longer matching the desired state. The
+                ReplicaSet will create an additional Pod, thus ensuring that the current state matches the desired
+                state.<br>
+                <img src="https://i.imgur.com/I3aSQll.png" alt="Imgur">
+                <em>ReplicaSet (Creating a Pod to Match Current an Desired States)</em></li>
+            <li>A Deployment automatically creates a ReplicaSet, which then creates a Pod.</li>
+            <li>There is no need to manage ReplicaSets and Pods separately.</li>
+            <li>The Deployment will manage them on our behalf.</li>
+        </ul>
+        <h2 id="deployment">Deployment.</h2>
+        <ul>
+            <li><a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/">Deployment</a> objects
+                provide declaration updatesto Pods and ReplicaSets.</li>
+            <li>The Deployment Controller is part of the master node's controller manager.</li>
+            <li>It ensure that the current state always matches the desired state.</li>
+            <li>It allows for seamless application updates and downgrades through <strong>rollouts</strong> and
+                <strong>rollbacks</strong>.</li>
+            <li>It directly manages its ReplicaSets for application scaling.</li>
+            <li>Example:
+                <pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">name:</span> <span class="hljs-string">nginx-deployment</span>
+<span class="hljs-attr">labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">replicas:</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">selector:</span>
+<span class="hljs-attr">    matchLabels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">template:</span>
+<span class="hljs-attr">    metadata:</span>
+<span class="hljs-attr">    labels:</span>
+<span class="hljs-attr">        app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    spec:</span>
+<span class="hljs-attr">    containers:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">        image:</span> <span class="hljs-attr">nginx:1.7.9</span>
+<span class="hljs-attr">        ports:</span>
+<span class="hljs-attr">        - containerPort:</span> <span class="hljs-number">80</span>
+</div></code></pre>
+                <img src="https://i.imgur.com/DQXwhM3.png" alt="Imgur"><br>
+                <em>Deployment (ReplicaSet A Created)</em>
+                <ul>
+                    <li>A new Deployment creates <strong>ReplicaSet A</strong> which then creates <strong>3
+                            Pods</strong></li>
+                    <li>each Pod template configured to run one nginx:1.7.9 container image.</li>
+                    <li>In this case, the <strong>ReplicaSet A</strong> is associated with nginx: 1.7.9 representing a
+                        state of the Deployment.</li>
+                    <li>This particular state is recorded as <strong>Revision 1</strong>.</li>
+                </ul>
+                <hr>
+                <ul>
+                    <li>Now, in the Deployment, we change to Pods' Template and we update the container image from
+                        <strong>nginx:1.7.9</strong> to <strong>nginx:1.9.1</strong>.</li>
+                    <li>The Deployment triggers a new <strong>ReplicaSet B</strong> for the new container image
+                        versioned <strong>1.9.1</strong>.</li>
+                    <li>This association represents a new recorded state of the Deployment, <strong>Revision 2</strong>
+                    </li>
+                    <li>The transition between the two ReplicaSets from A to B or from <strong>Revision 1</strong> to
+                        <strong>Revision 2</strong> is a Deployment <strong>rolling update</strong>.<br>
+                        <img src="https://i.imgur.com/pMqbSdj.png" alt="Imgur">
+                        <em>Deployment (ReplicaSet B Created)</em></li>
+                </ul>
+                <hr>
+                <ul>
+                    <li>Once <strong>ReplicaSet B</strong> and its <strong>3 Pods</strong> versioned
+                        <strong>1.9.1</strong> are ready, the Deployment starts actively managing them.</li>
+                    <li>The Deployment keeps its prior configuration states saved as Revisions which play a key factor
+                        in the <strong>rollback</strong> capability of the Deployment - returning to a prior known
+                        configuration state.</li>
+                    <li>In example, if the performance of the new nginx:1.9.1 isn't satisfactory, the Deployment can be
+                        rolled back to a prior Revision. In this case <strong>Revision 2</strong> back to
+                        <strong>Revision 1</strong> running nginx:1.7.9<br>
+                        <img src="https://i.imgur.com/zHjdP1i.png" alt="Imgur"></li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="namespaces">Namespaces.</h2>
+        <ul>
+            <li>If multiple users and teams use the same k8s cluster, we can partition the cluster into virtual
+                sub-cluster using <a
+                    href="https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/">Namespaces</a>.
+            </li>
+            <li>The names of the resources/objects created inside a Namespace are unique, but not across Namespaces in
+                the cluster.</li>
+            <li>To list all the Namespaces.
+                <pre><code class="language-bash"><div>$ kubectl get namespace
+NAME              STATUS    AGE
+default           Active    2d
+kube-node-lease   Active    2d
+kube-public       Active    2d
+kube-system       Active    2d
+</div></code></pre>
+            </li>
+            <li>Generally, k8s creates four default Namespaces:
+                <ul>
+                    <li>kube-system<br>
+                        contains the objects created by the k8s system, mostly the control plane agents.</li>
+                    <li>kube-public<br>
+                        is a special namespace, which is unsecured and readable by anyone, used for special purposes
+                        such as exposing public(non-sensitive) information about the cluster.</li>
+                    <li>kube-node-lease<br>
+                        The newest Namespace. Holds node lease objects used for node heartbeat data.</li>
+                    <li>default<br>
+                        contains the objects and resources create by administrators and developers. By default, we
+                        connect to the default Namespace.</li>
+                </ul>
+            </li>
+            <li>Good practice, is to create more Namespace to virtualize the cluster for users and developer teams.</li>
+            <li>With <a href="https://kubernetes.io/docs/concepts/policy/resource-quotas/">Resource Quotas</a>, we can
+                divide the cluster resources within Namespaces.</li>
+        </ul>
+        <h2 id="demo">Demo</h2>
+        <p>create deployment.</p>
+        <pre><code class="language-bash"><div>$ kubectl create deployment mynginx --image=nginx:1.15-alpine
+error: no matches <span class="hljs-keyword">for</span> kind <span class="hljs-string">"Deployment"</span> <span class="hljs-keyword">in</span> version <span class="hljs-string">"extensions/v1beta1"</span>
+</div></code></pre>
+        <p>if we see that, chances are mismatch version as it says about version.<br>
+            Cehck kubectl version.</p>
+        <pre><code class="language-bash"><div>$ kubectl version
+Client Version: version.Info{Major:<span class="hljs-string">"1"</span>, Minor:<span class="hljs-string">"10"</span>, GitVersion:<span class="hljs-string">"v1.10.1"</span>, GitCommit:<span class="hljs-string">"d4ab47518836c750f9949b9e0d387f20fb92260b"</span>, GitTreeState:<span class="hljs-string">"clean"</span>, BuildDate:<span class="hljs-string">"2018-04-12T14:26:04Z"</span>, GoVersion:<span class="hljs-string">"go1.9.3"</span>, Compiler:<span class="hljs-string">"gc"</span>, Platform:<span class="hljs-string">"windows/amd64"</span>}
+Server Version: version.Info{Major:<span class="hljs-string">"1"</span>, Minor:<span class="hljs-string">"17"</span>, GitVersion:<span class="hljs-string">"v1.17.2"</span>, GitCommit:<span class="hljs-string">"59603c6e503c87169aea6106f57b9f242f64df89"</span>, GitTreeState:<span class="hljs-string">"clean"</span>, BuildDate:<span class="hljs-string">"2020-01-18T23:22:30Z"</span>, GoVersion:<span class="hljs-string">"go1.13.5"</span>, Compiler:<span class="hljs-string">"gc"</span>, Platform:<span class="hljs-string">"linux/amd64"</span>}
+</div></code></pre>
+        <p>Tha it is, Client is versioned <strong>1.10.1</strong>, while server is <strong>1.17.2</strong><br>
+            Download kubectl</p>
+        <pre><code class="language-bash"><div>$ curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/windows/amd64/kubectl.exe
+
+$ <span class="hljs-built_in">which</span> kubectl
+/cygdrive/c/ProgramData/chocolatey/bin/kubectl
+
+$ mv kubectl.exe <span class="hljs-string">"c:\ProgramData\chocolatey\bin"</span>
+
+$ kubectl version --client
+Client Version: version.Info{Major:<span class="hljs-string">"1"</span>, Minor:<span class="hljs-string">"17"</span>, GitVersion:<span class="hljs-string">"v1.17.0"</span>, GitCommit:<span class="hljs-string">"70132b0f130acc0bed193d9ba59dd186f0e634cf"</span>, GitTreeState:<span class="hljs-string">"clean"</span>, BuildDate:<span class="hljs-string">"2019-12-07T21:20:10Z"</span>, GoVersion:<span class="hljs-string">"go1.13.4"</span>, Compiler:<span class="hljs-string">"gc"</span>, Platform:<span class="hljs-string">"windows/amd64"</span>}
+</div></code></pre>
+        <p>Create deployment one more time.</p>
+        <pre><code class="language-bash"><div>$ kubectl create deployment mynginx --image=nginx:1.15-alpine
+deployment.apps/mynginx created
+</div></code></pre>
+        <p>To get deployment, replicaSet, Pod we can use</p>
+        <pre><code class="language-bash"><div>$ kubectl get deploy,rs,po
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mynginx   1/1     1            1           5m58s
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/mynginx-7d5785cdbd   1         1         1       5m58s
+
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/mynginx-7d5785cdbd-bg8nm   1/1     Running   0          5m58s
+
+</div></code></pre>
+        <p>to filter it with label</p>
+        <pre><code class="language-bash"><div>$ kubectl get deploy,rs,po -l app=mynginx
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mynginx   1/1     1            1           6m11s
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/mynginx-7d5785cdbd   1         1         1       6m11s
+
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/mynginx-7d5785cdbd-bg8nm   1/1     Running   0          6m11s
+</div></code></pre>
+        <p>Now let's scale the previous deployment's replica to 3</p>
+        <pre><code class="language-bash"><div>$ kubectl scale --replicas=3 deploy/mynginx
+deployment.apps/mynginx scaled
+</div></code></pre>
+        <p>Verified the result</p>
+        <pre><code class="language-bash"><div>$ kubectl get deploy,rs,po -l app=mynginx
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mynginx   3/3     3            3           11m
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/mynginx-7d5785cdbd   3         3         3       11m
+
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/mynginx-7d5785cdbd-9tsrv   1/1     Running   0          47s
+pod/mynginx-7d5785cdbd-bg8nm   1/1     Running   0          11m
+pod/mynginx-7d5785cdbd-ms2xx   1/1     Running   0          47s
+</div></code></pre>
+        <p>To describe deployment.</p>
+        <pre><code class="language-bash"><div>$ kubectl describe deploy mynginx
+Name:                   mynginx
+Namespace:              default
+CreationTimestamp:      Mon, 24 Feb 2020 11:43:00 +0700
+Labels:                 app=mynginx
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=mynginx
+Replicas:               3 desired | 3 updated | 3 total | 3 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=mynginx
+  Containers:
+   nginx:
+    Image:        nginx:1.15-alpine
+    Port:         &lt;none&gt;
+    Host Port:    &lt;none&gt;
+    Environment:  &lt;none&gt;
+    Mounts:       &lt;none&gt;
+  Volumes:        &lt;none&gt;
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Progressing    True    NewReplicaSetAvailable
+  Available      True    MinimumReplicasAvailable
+OldReplicaSets:  &lt;none&gt;
+NewReplicaSet:   mynginx-7d5785cdbd (3/3 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  14m    deployment-controller  Scaled up replica <span class="hljs-built_in">set</span> mynginx-7d5785cdbd to 1
+  Normal  ScalingReplicaSet  3m34s  deployment-controller  Scaled up replica <span class="hljs-built_in">set</span> mynginx-7d5785cdbd to 3
+</div></code></pre>
+        <p>Check rollout history</p>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deploy mynginx
+deployment.apps/mynginx
+REVISION  CHANGE-CAUSE
+1         &lt;none&gt;
+</div></code></pre>
+        <p>Revision 1 is associated to <strong>nginx:1.15-alpine and</strong> replicaSet of
+            <strong>replicaset.apps/mynginx-7d5785cdbd</strong><br>
+            To get more details on revision 1</p>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deploy mynginx --revision=1
+deployment.apps/mynginx with revision <span class="hljs-comment">#1</span>
+Pod Template:
+  Labels:       app=mynginx
+        pod-template-hash=7d5785cdbd
+  Containers:
+   nginx:
+    Image:      nginx:1.15-alpine
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Environment:        &lt;none&gt;
+    Mounts:     &lt;none&gt;
+  Volumes:      &lt;none&gt;
+</div></code></pre>
+        <p>but no revision 2</p>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deploy mynginx --revision=2
+error: unable to find the specified revision
+</div></code></pre>
+        <p>Now let's update nginx image version. (<em>Update</em> can be downgrade or upgrade)</p>
+        <pre><code class="language-bash"><div>$ kubectl <span class="hljs-built_in">set</span> image deployment mynginx nginx=nginx:1.16-alpine
+deployment.apps/mynginx image updated
+</div></code></pre>
+        <p>Check history</p>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deployment mynginx
+deployment.apps/mynginx
+REVISION  CHANGE-CAUSE
+1         &lt;none&gt;
+2         &lt;none&gt;
+</div></code></pre>
+        <p>Check revision 1 first</p>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deployment mynginx --revision=1
+deployment.apps/mynginx with revision <span class="hljs-comment">#1</span>
+Pod Template:
+  Labels:       app=mynginx
+        pod-template-hash=7d5785cdbd
+  Containers:
+   nginx:
+    Image:      nginx:1.15-alpine
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Environment:        &lt;none&gt;
+    Mounts:     &lt;none&gt;
+  Volumes:      &lt;none&gt;
+</div></code></pre>
+        <p>Check revision 2</p>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deployment mynginx --revision=2
+deployment.apps/mynginx with revision <span class="hljs-comment">#2</span>
+Pod Template:
+  Labels:       app=mynginx
+        pod-template-hash=5dfd47c855
+  Containers:
+   nginx:
+    Image:      nginx:1.16-alpine
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Environment:        &lt;none&gt;
+    Mounts:     &lt;none&gt;
+  Volumes:      &lt;none&gt;
+
+</div></code></pre>
+        <p>Check k8s objects of our app</p>
+        <pre><code class="language-bash"><div>$ kubectl get deployment,rs,pod -l app=mynginx
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mynginx   3/3     3            3           29m
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/mynginx-5dfd47c855   3         3         3       4m47s
+replicaset.apps/mynginx-7d5785cdbd   0         0         0       29m
+
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/mynginx-5dfd47c855-n5ckf   1/1     Running   0          4m36s
+pod/mynginx-5dfd47c855-nqz6r   1/1     Running   0          4m47s
+pod/mynginx-5dfd47c855-vx9kl   1/1     Running   0          4m37s
+</div></code></pre>
+        <ul>
+            <li>we have the same deployment.</li>
+            <li>we have 3 pods are running.</li>
+            <li>the original replicaSet(<strong>7d5785cdbd</strong>) is now scaled down to zero.</li>
+            <li>the original replicaSet is recorded.</li>
+        </ul>
+        <p>Let's rollback to <strong>revision 1</strong></p>
+        <pre><code class="language-bash"><div>$ kubectl rollout undo deployment mynginx --to-revision=1
+deployment.apps/mynginx rolled back
+</div></code></pre>
+        <p>Let's check revision history</p>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deployment mynginx
+deployment.apps/mynginx
+REVISION  CHANGE-CAUSE
+2         &lt;none&gt;
+3         &lt;none&gt;
+</div></code></pre>
+        <ul>
+            <li><strong>Revision 1</strong> (which is the original version) becomes <strong>Revision 3</strong></li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl rollout <span class="hljs-built_in">history</span> deployment mynginx --revision=3
+deployment.apps/mynginx with revision <span class="hljs-comment">#3</span>
+Pod Template:
+  Labels:       app=mynginx
+        pod-template-hash=7d5785cdbd
+  Containers:
+   nginx:
+    Image:      nginx:1.15-alpine
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Environment:        &lt;none&gt;
+    Mounts:     &lt;none&gt;
+  Volumes:      &lt;none&gt;
+
+
+$ kubectl rollout <span class="hljs-built_in">history</span> deployment mynginx --revision=1
+error: unable to find the specified revision
+
+
+$ kubectl rollout <span class="hljs-built_in">history</span> deployment mynginx --revision=2
+deployment.apps/mynginx with revision <span class="hljs-comment">#2</span>
+Pod Template:
+  Labels:       app=mynginx
+        pod-template-hash=5dfd47c855
+  Containers:
+   nginx:
+    Image:      nginx:1.16-alpine
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Environment:        &lt;none&gt;
+    Mounts:     &lt;none&gt;
+  Volumes:      &lt;none&gt;
+
+</div></code></pre>
+        <p>Check deployment object.</p>
+        <pre><code class="language-bash"><div>$ kubectl get deployment,rs,pod -l app=mynginx
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mynginx   3/3     3            3           42m
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/mynginx-5dfd47c855   0         0         0       18m
+replicaset.apps/mynginx-7d5785cdbd   3         3         3       42m
+
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/mynginx-7d5785cdbd-8625s   1/1     Running   0          6m58s
+pod/mynginx-7d5785cdbd-fc69n   1/1     Running   0          7m
+pod/mynginx-7d5785cdbd-fcb55   1/1     Running   0          6m55s
+</div></code></pre>
+        <ul>
+            <li>the original replicaSet is now scaled up to three.</li>
+            <li>the second replicaSet is now scaled down to zero.</li>
+            <li>by default, we can perform up to 10 consecutive rolling updates. And then we can then rollback to any
+                one of those 10 recorded states.</li>
+            <li>Rolling updates and rollbacks are not specific for deployment only.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl rollout --<span class="hljs-built_in">help</span>
+Manage the rollout of a resource.
+
+ Valid resource types include:
+
+  *  deployments
+  *  daemonsets
+  *  statefulsets
+
+Examples:
+  <span class="hljs-comment"># Rollback to the previous deployment</span>
+  kubectl rollout undo deployment/abc
+
+  <span class="hljs-comment"># Check the rollout status of a daemonset</span>
+  kubectl rollout status daemonset/foo
+
+Available Commands:
+  <span class="hljs-built_in">history</span>     View rollout <span class="hljs-built_in">history</span>
+  pause       Mark the provided resource as paused
+  restart     Restart a resource
+  resume      Resume a paused resource
+  status      Show the status of the rollout
+  undo        Undo a previous rollout
+
+Usage:
+  kubectl rollout SUBCOMMAND [options]
+
+Use <span class="hljs-string">"kubectl &lt;command&gt; --help"</span> <span class="hljs-keyword">for</span> more information about a given <span class="hljs-built_in">command</span>.
+Use <span class="hljs-string">"kubectl options"</span> <span class="hljs-keyword">for</span> a list of global <span class="hljs-built_in">command</span>-line options (applies to all commands).
+
+</div></code></pre>
+
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
