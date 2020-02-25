@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Kubernetes authentication</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+
+    <style>
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item-checkbox {
+            margin-left: -20px;
+            vertical-align: middle;
+        }
+    </style>
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+
+        <h1 id="authentication-authorization-admission-control">Authentication, Authorization, Admission Control.</h1>
+        <ul>
+            <li>Each access request to API endpoint goes through the follow three stages:
+                <ul>
+                    <li><strong>Authentication</strong> : Logs in a user.</li>
+                    <li><strong>Authorization</strong>: Authorize the API requests added by the logged-in user.</li>
+                    <li><strong>Admission Control</strong> : Software modules that can modify or reject the requests
+                        based on some additional checks, like a pre-set Quota.<br>
+                        <img src="https://d33wubrfki0l68.cloudfront.net/673dbafd771491a080c02c6de3fdd41b09623c90/50100/images/docs/admin/access-control-overview.svg"
+                            alt="Accessing the API"><br>
+                        (Retrieved from <a
+                            href="https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/">controlling-access</a>)
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="authentication"><strong>Authentication</strong>.</h2>
+        <ul>
+            <li>k8s <strong>doesn't have</strong> an object called <em>user</em></li>
+            <li>also doesn't have <em>username</em> as well.</li>
+            <li>doesn't have related details in its object store.</li>
+            <li>It has two kinds of users:
+                <ul>
+                    <li><strong>Normal Users</strong><br>
+                        They are managed outside of the K8s cluster via independent service like:
+                        <ul>
+                            <li>User/Client certificates.</li>
+                            <li>file listing usernames/passwords</li>
+                            <li>Google accounts</li>
+                            <li>etc.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Service Accounts</strong>
+                        <ul>
+                            <li>in-cluster processes communicate with the API server to perform operations.</li>
+                            <li>Most of the Service Account users are created automatically via the API server.</li>
+                            <li>They can also be created manually.</li>
+                            <li>The Service Account users are tied to a given Namespace and mount the respective
+                                credentials to communicate with the API server as Secrets.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li>If properly configured, k8s can also support anonymous requests, along with requests form Normal Users
+                and Service Accounts.</li>
+            <li><strong>User impersonation</strong> is also <strong>supported</strong> for a user to be able to act as
+                another user, a useful feature for administrators when troubleshooting authorization policies.</li>
+        </ul>
+        <h2 id="authentication-modules-reference">Authentication modules <a
+                href="https://kubernetes.io/docs/reference/access-authn-authz/authentication/#authentication-strategies">reference</a>
+        </h2>
+        <ul>
+            <li>Client certificates
+                <ul>
+                    <li>we need to reference a file containing one or more certificate authorities by passing the
+                        <strong>--client-ca-file=SOMEFILE</strong> option to the API server.</li>
+                </ul>
+            </li>
+            <li>Static Token File
+                <ul>
+                    <li>We can pass a file containing pre-defined bearer tokens with the
+                        <strong>--token-auth-file=SOMEFILE</strong> option to the API server.</li>
+                    <li>Currently these tokens would last indefinitely.</li>
+                    <li>they cannot be change without restarting the API server.</li>
+                </ul>
+            </li>
+            <li>Bootstrap Tokens
+                <ul>
+                    <li>This feature is currently in beta status.</li>
+                    <li>It is mostly used for bootstrapping a new K8s cluster.</li>
+                </ul>
+            </li>
+            <li>Static Password File
+                <ul>
+                    <li>a file containing basic authentication details with the
+                        <strong>--basic-auth-file=SOMEFILE</strong> option.</li>
+                    <li>These credentials would last indefinitely.</li>
+                    <li>Password cannnot be change without restarting the API server</li>
+                </ul>
+            </li>
+            <li>Service Account Tokens
+                <ul>
+                    <li>This is an automatically enabled authenticatorthat uses signed bearer tokens to verify the
+                        requests.</li>
+                    <li>These tokens get attached to Pods using the ServiceAccount Admission Controller, which allows
+                        in-cluster processes to talk to the API server.</li>
+                </ul>
+            </li>
+            <li>OpenID Connect Tokens
+                <ul>
+                    <li>helps us connect with OAuth2 providers, such as Azure Active Directory, Salesforce, Google,
+                        etc., to offload the authentication to external service.</li>
+                </ul>
+            </li>
+            <li>Webhook Token Authentication
+                <ul>
+                    <li>verification of bearer tokens can be offloaded to a remote service.</li>
+                </ul>
+            </li>
+            <li>Authenticating Proxy
+                <ul>
+                    <li>To program additional authentication logic.</li>
+                </ul>
+            </li>
+        </ul>
+        <p>We can enable multiple authenticators, and the first module to successfully authenticate the request
+            short-circuits the evaluation.<br>
+            In order to be successful, you should enable at least two methods: the service account tokens authenticator
+            and one of the user authenticators.</p>
+        <h2 id="authorization"><strong>Authorization</strong>.</h2>
+        <ul>
+            <li>After a successful authentication, users can send the API request to perform different operations.</li>
+            <li>Those API requests get authorized by k8s using various authorization modules.</li>
+            <li>Some of the API reqeust attributes that are reviewed by k8s include user, group, extra, Resource or
+                Namespace, etc.</li>
+            <li>These attributes are evaluated against policies.</li>
+            <li>If the evaluation is successful, then the request will be allowed., otherwise, it will get denied.</li>
+            <li>Authorization ahs multiple modules/authorizers.</li>
+            <li>More thant one module can be configured for one k8s cluster, and each module is checked in sequence.
+            </li>
+            <li>If any authorizer approves or denies a request, then that decision is returned immediately.</li>
+        </ul>
+        <h2 id="authorization-modules">Authorization modules.</h2>
+        <h3 id="node-authorizer">Node Authorizer</h3>
+        <ul>
+            <li>a special-purpose authorization mode which specifically authorizes API reqeusts made by kubelets.</li>
+            <li>it authorizes the kubelets' read operations for services, endpoints, nodes etc.</li>
+            <li>it authorizes writes operations for nodes, pods, events,etc.</li>
+            <li><a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">more details</a></li>
+        </ul>
+        <h3 id="attribute-based-access-control-abac-authorizer">Attribute-Based Access Control (ABAC) Authorizer.</h3>
+        <ul>
+            <li>With the ABAC authorizer, k8s grants access to API reqeusts, which combine policies with attributes.
+            </li>
+            <li>Example: the following user <em>student</em> can only read Pods in the Namespace <strong>lfs158</strong>
+                <pre><code class="language-JSON"><div>{
+  <span class="hljs-attr">"apiVersion"</span>: <span class="hljs-string">"abac.authorization.kubernetes.io/v1beta1"</span>,
+  <span class="hljs-attr">"kind"</span>: <span class="hljs-string">"Policy"</span>,
+  <span class="hljs-attr">"spec"</span>: {
+    <span class="hljs-attr">"user"</span>: <span class="hljs-string">"student"</span>,
+    <span class="hljs-attr">"namespace"</span>: <span class="hljs-string">"lfs158"</span>,
+    <span class="hljs-attr">"resource"</span>: <span class="hljs-string">"pods"</span>,
+    <span class="hljs-attr">"readonly"</span>: <span class="hljs-literal">true</span>
+  }
+}
+</div></code></pre>
+            </li>
+            <li>To enable the ABAC authorizer, we would need to start the API server with the
+                <strong>--authorization-mode=ABAC</strong> option.</li>
+            <li>We would also need to specify the authorization policy with
+                <strong>--authorization-policy-file=PolicyFile.Json</strong>.</li>
+            <li><a href="https://kubernetes.io/docs/reference/access-authn-authz/abac/">more details</a></li>
+        </ul>
+        <h3 id="webhook-auhtorizer">Webhook Auhtorizer</h3>
+        <ul>
+            <li>With th e Webhook authorizzer, k8s can offer authorizatoin decisions to some third-party services.</li>
+            <li>The third-party services return <strong>true</strong> for successful authorizaton and
+                <strong>false</strong> for failure.</li>
+            <li>start API server with <strong>--authorization-webhook-config-file=SOME_FILENAME</strong> option. where
+                <strong>SOME_FILENAME</strong> is the configuration of the remote authorization servcie.</li>
+            <li><a href="https://kubernetes.io/docs/reference/access-authn-authz/webhook/">more details</a></li>
+        </ul>
+        <h3 id="role-based-access-control-rbac-authorizer">Role-Based Access Control (RBAC) Authorizer</h3>
+        <ul>
+            <li>RBAC can regulate the access to rsoruce based on the roles of individual users.</li>
+            <li>in k8s, we can have different roles that can be attached to subjects like users, service account,etc.
+            </li>
+            <li>While creating the roles, we restrict resource access by specific operations, such as <strong>create,
+                    get, update, patch</strong>, etc. These operations are referred to as verbs.</li>
+            <li>In RBAC, we can create two kinds of roles:
+                <ul>
+                    <li><strong>Role</strong>
+                        <ul>
+                            <li>With Role, we can grant access to resources within a specific Namespace.</li>
+                        </ul>
+                    </li>
+                    <li><strong>ClusterRole</strong>
+                        <ul>
+                            <li>The ClusterRole can be used to grant the same permmissions as Role does, but its scope
+                                is cluster-wide.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li>Example for <strong>Role</strong> :
+                <pre><code class="language-YAML"><div><span class="hljs-attr">kind:</span> <span class="hljs-string">Role</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  namespace:</span> <span class="hljs-string">lfs158</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">pod-reader</span>
+<span class="hljs-attr">rules:</span>
+<span class="hljs-attr">- apiGroups:</span> <span class="hljs-string">[""]</span> <span class="hljs-comment"># "" indicates the core API group</span>
+<span class="hljs-attr">  resources:</span> <span class="hljs-string">["pods"]</span>
+<span class="hljs-attr">  verbs:</span> <span class="hljs-string">["get",</span> <span class="hljs-string">"watch"</span><span class="hljs-string">,</span> <span class="hljs-string">"list"</span><span class="hljs-string">]</span>
+</div></code></pre>
+                <ul>
+                    <li>it creates a pod-reader role.</li>
+                    <li>access only to read the Pods of <strong>lfs158</strong> Namespace.</li>
+                    <li>Once the role is created, we can bind users with RoleBinding.</li>
+                </ul>
+            </li>
+            <li>Two kind of RoleBindings.
+                <ul>
+                    <li><strong>RoleBinding</strong>
+                        <ul>
+                            <li>binds users to the same namespace as a Role.</li>
+                            <li>We could refer a ClusterRole in RoleBinding, which would grant persmissions to Namespace
+                                resources defined in the ClusterRole withing hte RoleBinding's Namespace.</li>
+                        </ul>
+                    </li>
+                    <li><strong>ClusterRoleBinding</strong>
+                        <ul>
+                            <li>grants access to resource at a cluster-lever and to all Namespaces.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li>Example of <strong>RoleBinding</strong>
+                <pre><code class="language-YAML"><div><span class="hljs-attr">kind:</span> <span class="hljs-string">RoleBinding</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">pod-read-access</span>
+<span class="hljs-attr">  namespace:</span> <span class="hljs-string">lfs158</span>
+<span class="hljs-attr">subjects:</span>
+<span class="hljs-attr">- kind:</span> <span class="hljs-string">User</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">student</span>
+<span class="hljs-attr">  apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span>
+<span class="hljs-attr">roleRef:</span>
+<span class="hljs-attr">  kind:</span> <span class="hljs-string">Role</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">pod-reader</span>
+<span class="hljs-attr">  apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span>
+</div></code></pre>
+                <ul>
+                    <li>it gives access t othe <em>student</em> user to read the Pods of <strong>lfs158</strong>
+                        Namespace.</li>
+                    <li>to enable this feture. Start the API server with <strong>--authorization-mode=RBAC</strong>
+                        option.</li>
+                    <li><a href="https://kubernetes.io/docs/reference/access-authn-authz/rbac/">more detials</a></li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="admission-control"><strong>Admission Control</strong></h2>
+        <ul>
+            <li>Admission control is used to specify granular access control policies.</li>
+            <li>example:
+                <ul>
+                    <li>allowing access privileged containers,</li>
+                    <li>checking on resource quota.</li>
+                </ul>
+            </li>
+            <li>Different admission controllers like:
+                <ul>
+                    <li>ResoruceQuota</li>
+                    <li>DefultStorageClass</li>
+                    <li>AlwaysPullImagess</li>
+                    <li>etc.</li>
+                </ul>
+            </li>
+            <li>Admission Control invoked only after API requests are authenticated and authorized.</li>
+            <li>to enable this feature, start API server with <strong>--enable-admission-plugins</strong>, which takes
+                comma-delimited,ordered list of controller names:<br>
+                <strong>--enable-admission-plugins=NamespaceLifecycle,ResourceQuota,PodSecurityPolicy,DefaultStorageClass</strong>
+            </li>
+            <li><a href="https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/">more
+                    details</a></li>
+        </ul>
+        <hr>
+        <h2 id="authentication-and-authorization-exercise-guide">Authentication and Authorization Exercise Guide</h2>
+        <ul>
+            <li>delete Minikube cluster</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ minikube delete
+* Deleting <span class="hljs-string">"minikube"</span> <span class="hljs-keyword">in</span> virtualbox ...
+* Removed all traces of the <span class="hljs-string">"minikube"</span> cluster.
+
+$ ls .minikube
+addons         ca.crt          ca.pem    certs               client.key          files    machines             proxy-client-ca.key
+apiserver.crt  ca.crt.encoded  cache     client.crt          client.key.encoded  key.pem  profiles             proxy-client.crt
+apiserver.key  ca.key          cert.pem  client.crt.encoded  config              logs     proxy-client-ca.crt  proxy-client.key
+</div></code></pre>
+        <ul>
+            <li>start minikube with extra args.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ minikube start --extra-config=controller-manager.ClusterSigningCertFile=<span class="hljs-string">".minikube/ca.crt"</span> --extra-config=controller-manager.ClusterSigningKeyFile=<span class="hljs-string">".minikube/ca.key"</span>
+</div></code></pre>
+        <p>-config view</p>
+        <pre><code class="language-bash"><div>$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: C:\Users\Kone\.minikube\ca.crt
+    server: https://192.168.99.105:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: C:\Users\Kone\.minikube\client.crt
+    client-key: C:\Users\Kone\.minikube\client.key
+</div></code></pre>
+        <ul>
+            <li>create Namespace.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create namespace lfs158
+namespace/lfs158 created
+</div></code></pre>
+        <ul>
+            <li>create <strong>rbac</strong> dirctory</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ mkdir rbac
+
+$ <span class="hljs-built_in">cd</span> rbac
+</div></code></pre>
+        <ul>
+            <li>Create a private key for the student user with openssl tool.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ openssl genrsa -out student.key 2048
+Generating RSA private key, 2048 bit long modulus (2 primes)
+......................+++++
+...........................................................................................+++++
+e is 65537 (0x010001)
+
+$ ls
+student.key
+</div></code></pre>
+        <ul>
+            <li>Create a certificate signing request for the student user with openssl tool</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ openssl req -new -key student.key -out student.csr -subj <span class="hljs-string">"/CN=student/O=learner"</span>
+
+$ ls
+student.csr  student.key
+</div></code></pre>
+        <ul>
+            <li>View the certificate signing request in base 64</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ cat student.csr | base64 | tr -d <span class="hljs-string">'\n'</span>
+LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ2FUQ0NBVkVDQVFBd0pERVFNQTRHQTFVRUF3d0hjM1IxWkdWdWRERVFNQTRHQTFVRUNnd0hiR1ZoY201bApjakNDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFOby9ac0wvQWZXcWcyNHN1SHpPCjRKL210ckdxMEM2OWpUZ3A4WTJMZ1ZJN1JacnJFQ2tFMjdCa3UxaWh4NktZRkdqRDFVM09qcFdpOWk1OXVtVUwKWE9ydnJvL3ExK0FVbnBaWGFrNi9QZ3QvV0tiaUZxVTZzbUJwTXNhUmdEa1ZPektJQ2pZWUZwWkpSRXVPelg2bAo0OHg2eVpvNmpLUnNISjZvbFA2T2x5ZzNpNUZUdk4xdDFvODVIYk9EY1lVN3ZVY01vaWUvY1BVcmFXeWlIN1BnCkJseWJlWjRGRDFoeEdpa0R0TXo4UXp0dGFNMHRvaWRUUXFoZ3Rid2ZyejZuelZuS1I2M2R2VUt1dWYySFk3K24KU3dVdml6V2M3TGIxdEh5aHF0bGNoWTJrM25WRXFCNUlsdmo4R3B4Y0xjRk4zaGJCc0hFNGE4aDlqMkc3SEhLawp0cWtDQXdFQUFhQUFNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUFvQnRnd2JmTmRlVXR6QTRYemhycEJjQ2tGClJscUUxcjVnK3YwTDMzRVBkUUJoa01RckRnbU9pdEozRGJSRWRPZ1Z5WmhVWkhSS0VEUGoyTWVoVS9sQlptZmwKVUZjYldudlBSb05tKy81V2hjbzFnQzMzbUd3V0VPdStLaUdLSWkrVWNpQm9nS214WFZCTFcvd2FUa3djRnY5agpYWTMzWlFVSUY5S2ErekNETGMzMTgzTjdoMGU5cUNFa3hZd3BVWTJ6ZnF6TlBBU3RjRWZ4RGlVdlJKc3hDVWFyCkdxSkNNN0IzMk0rdlNFNmcvRmxuUzQwTDZWaFRGRm9OUnN2NzgxUVhmYnRESlVLSVFtalZhVWFzNUhBbm9WRE8KemhJa05xK3FoU0dSZ0tMdmhiK1YvZE5XZjU3TDRpU0lGZUdsbE1jYy95d3VLSDVrMGRCTkErMS9ERzJlCi0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+</div></code></pre>
+        <ul>
+            <li>Create a YAML configuration file for a certificate signing request object.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ vi signing-request.yaml
+</div></code></pre>
+        <ul>
+            <li><strong>noted</strong> the following group is string that happen to have &quot;:&quot; in the middle. It
+                is not a key-value type.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ cat signing-request.yaml
+apiVersion: certificates.k8s.io/v1beta1
+kind: CertificateSigningRequest
+metadata:
+  name: student-csr
+spec:
+  group:
+  - system:authenticated
+  request: LS0tLS1CRUdJTiBD...tLS0tLQo=
+  usages:
+  - digital signature
+  - key encipherment
+  - client auth
+
+</div></code></pre>
+        <ul>
+            <li>Create the certificate signing reqeust object.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl apply -f signing-request.yaml
+certificatesigningrequest.certificates.k8s.io/student-csr created
+</div></code></pre>
+        <ul>
+            <li>list the crs object.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get csr
+NAME          AGE   REQUESTOR       CONDITION
+student-csr   22s   minikube-user   Pending
+</div></code></pre>
+        <ul>
+            <li>Approve the certificate signing request object.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl certificate approve student-csr
+certificatesigningrequest.certificates.k8s.io/student-csr approved
+</div></code></pre>
+        <ul>
+            <li>list the certificate signing reqeust objects again.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get csr
+NAME          AGE     REQUESTOR       CONDITION
+student-csr   2m47s   minikube-user   Approved,Issued
+</div></code></pre>
+        <ul>
+            <li>show certificate.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get csr student-csr -o jsonpath=<span class="hljs-string">'{.status.certificate}'</span>
+<span class="hljs-string">'LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMrVENDQWVHZ0F3SUJBZ0lSQUs3UHQ1L3NZYzh1bEtOZlpjdDJFcVF3RFFZSktvWklodmNOQVFFTEJRQXcKRlRFVE1CRUdBMVVFQXhNS2JXbHVhV3QxWW1WRFFUQWVGdzB5TURBeU1qVXhOVEl4TVRCYUZ3MHlNVEF5TWpReApOVEl4TVRCYU1DUXhFREFPQmdOVkJBb1RCMnhsWVhKdVpYSXhFREFPQmdOVkJBTVRCM04wZFdSbGJuUXdnZ0VpCk1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLQW9JQkFRRGFQMmJDL3dIMXFvTnVMTGg4enVDZjVyYXgKcXRBdXZZMDRLZkdOaTRGU08wV2E2eEFwQk51d1pMdFlvY2VpbUJSb3c5Vk56bzZWb3ZZdWZicGxDMXpxNzY2UAo2dGZnRko2V1YycE92ejRMZjFpbTRoYWxPckpnYVRMR2tZQTVGVHN5aUFvMkdCYVdTVVJManMxK3BlUE1lc21hCk9veWtiQnllcUpUK2pwY29ONHVSVTd6ZGJkYVBPUjJ6ZzNHRk83MUhES0ludjNEMUsybHNvaCt6NEFaY20zbWUKQlE5WWNSb3BBN1RNL0VNN2JXak5MYUluVTBLb1lMVzhINjgrcDgxWnlrZXQzYjFDcnJuOWgyTy9wMHNGTDRzMQpuT3kyOWJSOG9hclpYSVdOcE41MVJLZ2VTSmI0L0JxY1hDM0JUZDRXd2JCeE9HdklmWTlodXh4eXBMYXBBZ01CCkFBR2pOVEF6TUE0R0ExVWREd0VCL3dRRUF3SUZvREFUQmdOVkhTVUVEREFLQmdnckJnRUZCUWNEQWpBTUJnTlYKSFJNQkFmOEVBakFBTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDQmY3OHlRcm1HL2FzRlJLUHhKaGZpMGo2bgo1Ym5oYk1UaGlJdWN6NmZJT0E1bDRsbFF3OHpaU0grNnU4aWt1ZmRwVi83aWhYbm1nZkQxMGV1KzJlZlhGd2taClhFOHI4YkcvZDByUzIxQWFNMHB3a2dRUUpEUHRidEZCYnQydXA0Y0VsOVQwVUladWxLK3k4U2RNOTNLVmxHZGkKcmdYOEp3TzhRa0lZZmI0czY0T0tHT2VjL2lIYytvT2JVUVA0aDlGMG1aS3FqS0RkZVB0Qk1XMWltMUVkb2k4MApRcjB6NTlWK0ZBajNSTndDbFpFYjRuYlZ4bEJqN2JhMGN1ajY1QVZvTnRhVVoxVEFDeWhhSnhidHJxdmNsTkNZCk5lTE8zbWkrKzZWVjVsTzlBZmNIZEt0aHc0Y1BiZXdSaHBKenVTaDlaMTQ2K1dPcHUvSjF4RkJKVVdENAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=='</span>
+</div></code></pre>
+        <ul>
+            <li>get decode certificate</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get csr student-csr -o jsonpath={.status.certificate} | base64 -d
+-----BEGIN CERTIFICATE-----
+MIIC+TCCAeGgAwIBAgIRAK7Pt5/sYc8ulKNfZct2EqQwDQYJKoZIhvcNAQELBQAw
+FTETMBEGA1UEAxMKbWluaWt1YmVDQTAeFw0yMDAyMjUxNTIxMTBaFw0yMTAyMjQx
+NTIxMTBaMCQxEDAOBgNVBAoTB2xlYXJuZXIxEDAOBgNVBAMTB3N0dWRlbnQwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDaP2bC/wH1qoNuLLh8zuCf5rax
+qtAuvY04KfGNi4FSO0Wa6xApBNuwZLtYoceimBRow9VNzo6VovYufbplC1zq766P
+6tfgFJ6WV2pOvz4Lf1im4halOrJgaTLGkYA5FTsyiAo2GBaWSURLjs1+pePMesma
+OoykbByeqJT+jpcoN4uRU7zdbdaPOR2zg3GFO71HDKInv3D1K2lsoh+z4AZcm3me
+BQ9YcRopA7TM/EM7bWjNLaInU0KoYLW8H68+p81Zyket3b1Crrn9h2O/p0sFL4s1
+nOy29bR8oarZXIWNpN51RKgeSJb4/BqcXC3BTd4WwbBxOGvIfY9huxxypLapAgMB
+AAGjNTAzMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDAjAMBgNV
+HRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQCBf78yQrmG/asFRKPxJhfi0j6n
+5bnhbMThiIucz6fIOA5l4llQw8zZSH+6u8ikufdpV/7ihXnmgfD10eu+2efXFwkZ
+XE8r8bG/d0rS21AaM0pwkgQQJDPtbtFBbt2up4cEl9T0UIZulK+y8SdM93KVlGdi
+rgX8JwO8QkIYfb4s64OKGOec/iHc+oObUQP4h9F0mZKqjKDdePtBMW1im1Edoi80
+Qr0z59V+FAj3RNwClZEb4nbVxlBj7ba0cuj65AVoNtaUZ1TACyhaJxbtrqvclNCY
+NeLO3mi++6VV5lO9AfcHdKthw4cPbewRhpJzuSh9Z146+WOpu/J1xFBJUWD4
+-----END CERTIFICATE-----
+</div></code></pre>
+        <ul>
+            <li>Save to file</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get csr student-csr -o jsonpath={.status.certificate} | base64 -d &gt; student.crt
+</div></code></pre>
+        <ul>
+            <li>configure the student user's credentials by assigning the key and certificate.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl config <span class="hljs-built_in">set</span>-credentials student --client-certificate=student.crt --client-key=student.key
+User <span class="hljs-string">"student"</span> <span class="hljs-built_in">set</span>.
+</div></code></pre>
+        <ul>
+            <li>create a new context entry in the kubectl client's configuration file for the student user, associated
+                with the lfs158 namespace in the minikube cluster.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl config <span class="hljs-built_in">set</span>-context student-context --cluster=minikube --namespace=lfs158 --user=student
+Context <span class="hljs-string">"student-context"</span> created.
+</div></code></pre>
+        <ul>
+            <li>check context</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: C:\Users\Kone\.minikube\ca.crt
+    server: https://192.168.99.105:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+- context:
+    cluster: minikube
+    namespace: lfs158
+    user: student
+  name: student-context
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: C:\Users\Kone\.minikube\client.crt
+    client-key: C:\Users\Kone\.minikube\client.key
+- name: student
+  user:
+    client-certificate: ..\k8spractice\rbac\student.crt
+    client-key: ..\k8spractice\rbac\student.key
+</div></code></pre>
+        <ul>
+            <li>while in the default <strong>minikube context</strong>, create a new deployment in the lfs158 namespace:
+            </li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 create deployment nginx --image=nginx:apline
+deployment.apps/nginx created
+</div></code></pre>
+        <ul>
+            <li>get pod in defualt namespace</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+        <ul>
+            <li>from the new context student-context try to list pods, The attemp fails because the student user has no
+                permissions configured for the student-context:</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl --context=student-context get pods
+Error from server (Forbidden): pods is forbidden: User <span class="hljs-string">"student"</span> cannot list resource <span class="hljs-string">"pods"</span> <span class="hljs-keyword">in</span> API group <span class="hljs-string">""</span> <span class="hljs-keyword">in</span> the namespace <span class="hljs-string">"lfs158"</span>
+</div></code></pre>
+        <ul>
+            <li>Create a YAML configuration file or a pod-reader role object, which allows only get, watch, list actions
+                in the lfs158 namespace against pod objects. We will</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create role pod-reader --resource=pods --verb=get --verb=watch --verb=list -o yaml &gt; role.yaml
+</div></code></pre>
+        <ul>
+            <li>view it.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ cat role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: <span class="hljs-string">"2020-02-25T16:07:27Z"</span>
+  name: pod-reader
+  namespace: default
+  resourceVersion: <span class="hljs-string">"12886"</span>
+  selfLink: /apis/rbac.authorization.k8s.io/v1/namespaces/default/roles/pod-reader
+  uid: a7197eea-f16e-4f80-9d8f-6dd715d38fa2
+rules:
+- apiGroups:
+  - <span class="hljs-string">""</span>
+  resources:
+  - pods
+  verbs:
+  - get
+  - watch
+  - list
+</div></code></pre>
+        <ul>
+            <li>added namesapce (optionally remove some metadata)</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ cat role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: lfs158
+rules:
+- apiGroups:
+  - <span class="hljs-string">""</span>
+  resources:
+  - pods
+  verbs:
+  - get
+  - watch
+  - list
+</div></code></pre>
+        <ul>
+            <li>create the role object. still in minikube context.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create -f role.yaml
+role.rbac.authorization.k8s.io/pod-reader created
+</div></code></pre>
+        <ul>
+            <li>list roles of lfs158 namespace</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 get roles
+NAME         AGE
+pod-reader   41s
+</div></code></pre>
+        <ul>
+            <li>create a yaml configuration file for a rolebinding. assigns the permissions of the pod-reader role to
+                the student user.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create rolebinding pod-read-access --namespace=lfs158 --role=pod-reader --user=student -o yaml &gt; rolebinding.yaml
+</div></code></pre>
+        <ul>
+            <li>cat it.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ cat rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: <span class="hljs-string">"2020-02-25T16:39:34Z"</span>
+  name: pod-read-access
+  namespace: lfs158
+  resourceVersion: <span class="hljs-string">"17102"</span>
+  selfLink: /apis/rbac.authorization.k8s.io/v1/namespaces/lfs158/rolebindings/pod-read-access
+  uid: 86ce7094-8a0f-45dc-8287-1fbe207fe183
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pod-reader
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: student
+</div></code></pre>
+        <ul>
+            <li>apply the rolebinding yaml file</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create -f rolebinding.yaml
+rolebinding.rbac.authorization.k8s.io/pod-read-access created
+</div></code></pre>
+        <ul>
+            <li>show rolebindings</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 get rolebinding
+NAME              AGE
+pod-read-access   92s
+</div></code></pre>
+        <ul>
+            <li>Now that we have assigned permission to the student user, try to list pods</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl --context=student-context get pods
+NAME                     READY   STATUS             RESTARTS   AGE
+nginx-68bb64c59b-cj5jq   0/1     ImagePullBackOff   0          60m
+
+$ kubectl get pods
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+        <ul>
+            <li>bad image , let's try to fix it</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 get deploy
+NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+nginx   0/1     1            0           65m
+</div></code></pre>
+        <ul>
+            <li>update image</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 <span class="hljs-built_in">set</span> image deployment/nginx nginx=nginx:1.16-apline
+deployment.apps/nginx image updated
+</div></code></pre>
+        <ul>
+            <li>get pod</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 get pods
+NAME                     READY   STATUS             RESTARTS   AGE
+nginx-579f667d9c-58hft   0/1     ImagePullBackOff   0          13m
+nginx-68bb64c59b-cj5jq   0/1     ImagePullBackOff   0          87m
+</div></code></pre>
+        <ul>
+            <li>describe</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 describe pod nginx-68bb64c59b-cj5jq
+
+...
+Events:
+  Type     Reason   Age                    From               Message
+  ----     ------   ----                   ----               -------
+  Warning  Failed   8m13s (x344 over 88m)  kubelet, minikube  Error: ImagePullBackOff
+  Normal   BackOff  3m1s (x367 over 88m)   kubelet, minikube  Back-off pulling image <span class="hljs-string">"nginx:apline"</span>
+
+  // Sorry no nginx:apline. it should be alpine (misspelling)
+
+<span class="hljs-comment"># for the followin is also misspelling.</span>
+$ kubectl -n lfs158 describe pod nginx-579f667d9c-58hft
+Events:
+  Type     Reason     Age                 From               Message
+  ----     ------     ----                ----               -------
+  Normal   Scheduled  15m                 default-scheduler  Successfully assigned lfs158/nginx-579f667d9c-58hft to minikube
+  Normal   Pulling    14m (x4 over 15m)   kubelet, minikube  Pulling image <span class="hljs-string">"nginx:1.16-apline"</span>
+  Warning  Failed     14m (x4 over 15m)   kubelet, minikube  Failed to pull image <span class="hljs-string">"nginx:1.16-apline"</span>: rpc error: code = Unknown desc = Error response from daemon: manifest <span class="hljs-keyword">for</span> nginx:1.16-apline not found: manifest unknown: manifest unknown
+  Warning  Failed     14m (x4 over 15m)   kubelet, minikube  Error: ErrImagePull
+  Warning  Failed     10m (x19 over 15m)  kubelet, minikube  Error: ImagePullBackOff
+  Normal   BackOff    49s (x62 over 15m)  kubelet, minikube  Back-off pulling image <span class="hljs-string">"nginx:1.16-apline"</span>
+</div></code></pre>
+        <ul>
+            <li>set image one more time.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 <span class="hljs-built_in">set</span> image deployment/nginx nginx=nginx:alpine
+deployment.apps/nginx image updated
+</div></code></pre>
+        <ul>
+            <li>show pod again</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl --context=student-context get pods
+NAME                     READY   STATUS    RESTARTS   AGE
+nginx-5b6fb6dd96-wfk98   1/1     Running   0          18s
+</div></code></pre>
+        <ul>
+            <li>describe it</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl -n lfs158 describe pod nginx-5b6fb6dd96-wfk98
+Name:         nginx-5b6fb6dd96-wfk98
+Namespace:    lfs158
+Priority:     0
+Node:         minikube/192.168.99.105
+Start Time:   Wed, 26 Feb 2020 00:26:08 +0700
+Labels:       app=nginx
+              pod-template-hash=5b6fb6dd96
+Annotations:  &lt;none&gt;
+Status:       Running
+IP:           172.17.0.4
+IPs:
+  IP:           172.17.0.4
+Controlled By:  ReplicaSet/nginx-5b6fb6dd96
+Containers:
+  nginx:
+    Container ID:   docker://003066d4b35a4da3672e45a622eee937aa8f330fe957677314968b4221288701
+    Image:          nginx:alpine
+    Image ID:       docker-pullable://nginx@sha256:9e81b8f9cef5a095f892183688798a5b2c368663276aa0f2be4b1cd283ace53d
+    Port:           &lt;none&gt;
+    Host Port:      &lt;none&gt;
+    State:          Running
+      Started:      Wed, 26 Feb 2020 00:26:21 +0700
+    Ready:          True
+    Restart Count:  0
+    Environment:    &lt;none&gt;
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-xpjxl (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  default-token-xpjxl:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-xpjxl
+    Optional:    <span class="hljs-literal">false</span>
+QoS Class:       BestEffort
+Node-Selectors:  &lt;none&gt;
+Tolerations:     node.kubernetes.io/not-ready:NoExecute <span class="hljs-keyword">for</span> 300s
+                 node.kubernetes.io/unreachable:NoExecute <span class="hljs-keyword">for</span> 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  85s   default-scheduler  Successfully assigned lfs158/nginx-5b6fb6dd96-wfk98 to minikube
+  Normal  Pulling    83s   kubelet, minikube  Pulling image <span class="hljs-string">"nginx:alpine"</span>
+  Normal  Pulled     72s   kubelet, minikube  Successfully pulled image <span class="hljs-string">"nginx:alpine"</span>
+  Normal  Created    72s   kubelet, minikube  Created container nginx
+  Normal  Started    72s   kubelet, minikube  Started container nginx
+</div></code></pre>
+
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
