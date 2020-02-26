@@ -99,11 +99,6 @@ body {
     text-align: center;
 }
 
-.note-container pre{
-    margin: 1rem 0;
-    border: 1px solid #6e6868c2;
-}
-
 .note-container img {
     margin: 1.5em 0;
 }
@@ -114,6 +109,9 @@ body {
 
 .note-container pre {
     white-space: pre-wrap;
+    margin: 1rem 0;
+    border: 1px solid #6e6868c2;
+    font-size: 1.25rem;
 }
 
 .note-container ul {
