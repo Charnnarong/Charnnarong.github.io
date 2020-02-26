@@ -333,7 +333,9 @@ apiserver.key  ca.key          cert.pem  client.crt.encoded  config             
         </ul>
         <pre><code class="language-bash"><div>$ minikube start --extra-config=controller-manager.ClusterSigningCertFile=<span class="hljs-string">".minikube/ca.crt"</span> --extra-config=controller-manager.ClusterSigningKeyFile=<span class="hljs-string">".minikube/ca.key"</span>
 </div></code></pre>
-        <p>-config view</p>
+        <ul>
+            <li>config view</li>
+        </ul>
         <pre><code class="language-bash"><div>$ kubectl config view
 apiVersion: v1
 clusters:
