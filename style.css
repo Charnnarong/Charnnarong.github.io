@@ -121,7 +121,7 @@ body {
 }
 
 .note-container>ul>li>ul>li {
-    margin-left: 4rem;
+    margin-left: 2rem;
     list-style-type: none;
 }
 
@@ -131,7 +131,7 @@ body {
 }
 
 .note-container>ul>li>ul>li>ul {
-    margin-left: 4rem;
+    margin-left: 2rem;
 }
 
 .note-container>ul>li>ul>li>ul>li {
