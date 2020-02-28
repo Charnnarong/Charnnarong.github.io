@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Kubernetes Deploying a Stand-Alone application</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+        <h1 id="deploying-a-stand-alone-application">Deploying a Stand-Alone Application</h1>
+        <ul>
+            <li>start dashboard</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ minikube dashboard
+</div></code></pre>
+        <ul>
+            <li>click create resource.</li>
+        </ul>
+        <p><img src="https://i.imgur.com/0GDaMkd.png" alt="Imgur"></p>
+        <ul>
+            <li>fill up resoruce.</li>
+        </ul>
+        <p><img src="https://i.imgur.com/rJE9HAm.png" alt="Imgur"></p>
+        <ul>
+            <li>By default, the app Label is set to hte application name. In our example k8s-app:webserver Label is set
+                to all objects created by this Deployment: Pods and Services (when exposed)</li>
+        </ul>
+        <p><img src="https://i.imgur.com/KheCLLe.png" alt="Imgur"></p>
+        <ul>
+            <li>By clicking on the Dploy button, we trigger the deployment.</li>
+            <li>The Deployment <strong>webserver</strong> will create a ReplicaSet (
+                <strong>webserver-c8f4d5fbc</strong>) which will eventually create three Pods
+                <ul>
+                    <li>webserver-c8f4d5fbc-9j65j</li>
+                    <li>webserver-c8f4d5fbc-hm9xt</li>
+                    <li>webserver-c8f4d5fbc-mlzc9</li>
+                </ul>
+            </li>
+        </ul>
+        <p><img src="https://i.imgur.com/YSQNNCg.png" alt="Imgur">
+            <img src="https://i.imgur.com/VTpQdq7.png" alt="Imgur"></p>
+        <p><strong>NOTE:</strong> Add the full URL in the Container Image field <strong><a
+                    href="http://docker.io/library/nginx:alpine">docker.io/library/nginx:alpine</a></strong> if any
+            issues are encountered with the simple nginx:alpine image name (or use the <strong><a
+                    href="http://k8s.gcr.io/nginx:alpine">k8s.gcr.io/nginx:alpine</a></strong> URL if it works instead)
+        </p>
+        <h2 id="display-details">Display details</h2>
+        <ul>
+            <li>get deployments</li>
+        </ul>
+        <p><img src="https://i.imgur.com/x00NxWa.png" alt="Imgur"></p>
+        <ul>
+            <li>get replica set</li>
+        </ul>
+        <p><img src="https://i.imgur.com/miJImv4.png" alt="Imgur"></p>
+        <ul>
+            <li>get pods</li>
+        </ul>
+        <p><img src="https://i.imgur.com/z3kxSF8.png" alt="Imgur"></p>
+        <ul>
+            <li>describe pod for more details</li>
+        </ul>
+        <p><img src="https://i.imgur.com/nqGETBc.png" alt="Imgur"></p>
+        <ul>
+            <li>observe the label <strong>k8s-app=webserver</strong></li>
+        </ul>
+        <h3 id="list-the-pods-along-with-their-attached-labels">List the Pods, along with their attached Labels</h3>
+        <ul>
+            <li>with the <strong>-L</strong> option to the <strong>kubectl get pods</strong> command.</li>
+            <li>we add extra columns in the output to list Pods with their attached Label keys and their values.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods -L k8s-app,blabla
+NAME                        READY   STATUS    RESTARTS   AGE   K8S-APP     BLABLA
+webserver-c8f4d5fbc-9j65j   1/1     Running   0          42m   webserver
+webserver-c8f4d5fbc-hm9xt   1/1     Running   0          42m   webserver
+webserver-c8f4d5fbc-mlzc9   1/1     Running   0          42m   webserver
+</div></code></pre>
+        <ul>
+            <li>All of the Pods are listed</li>
+            <li>each Pod has the Label key <strong>k8s-app</strong> with value set to <strong>webserver</strong></li>
+            <li>None of the Pods have the <strong>blabla</strong> Label key, no values are listed under the
+                <strong>BLABLA</strong> column.</li>
+        </ul>
+        <h3 id="select-the-pods-with-a-given-label">Select the Pods with a given Label</h3>
+        <ul>
+            <li>use <strong>-l</strong> option to select label with value</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods -l k8s-app=webserver
+NAME                        READY   STATUS    RESTARTS   AGE
+webserver-c8f4d5fbc-9j65j   1/1     Running   0          48m
+webserver-c8f4d5fbc-hm9xt   1/1     Running   0          48m
+webserver-c8f4d5fbc-mlzc9   1/1     Running   0          48m
+</div></code></pre>
+        <ul>
+            <li>Try using <strong>k8s-app=webserver1</strong> as the Selector</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods -l k8s-app=webserver1
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+        <h3 id="delete-the-deployment">Delete the Deployment</h3>
+        <pre><code class="language-bash"><div>$ kubectl delete deploy webserver
+deployment.apps <span class="hljs-string">"webserver"</span> deleted
+</div></code></pre>
+        <ul>
+            <li>check ReplicaSet</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get replicasets
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+        <ul>
+            <li>check Pods</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+        <h2 id="deploy-application-using-cli">Deploy application using CLI.</h2>
+        <ul>
+            <li>create the webserver.yaml file by generate it via kubectl.</li>
+            <li>Get help if not sure about the syntax.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create deploy --<span class="hljs-built_in">help</span>
+Create a deployment with the specified name.
+
+Aliases:
+deployment, deploy
+
+Examples:
+  <span class="hljs-comment"># Create a new deployment named my-dep that runs the busybox image.</span>
+  kubectl create deployment my-dep --image=busybox
+
+Options:
+      --allow-missing-template-keys=<span class="hljs-literal">true</span>: If <span class="hljs-literal">true</span>, ignore any errors <span class="hljs-keyword">in</span> templates when a field or map key is missing <span class="hljs-keyword">in</span>
+the template. Only applies to golang and jsonpath output formats.
+      --dry-run=<span class="hljs-literal">false</span>: If <span class="hljs-literal">true</span>, only <span class="hljs-built_in">print</span> the object that would be sent, without sending it.
+      --generator=<span class="hljs-string">''</span>: The name of the API generator to use.
+      --image=[]: Image name to run.
+  -o, --output=<span class="hljs-string">''</span>: Output format. One of:
+json|yaml|name|go-template|go-template-file|template|templatefile|jsonpath|jsonpath-file.
+      --save-config=<span class="hljs-literal">false</span>: If <span class="hljs-literal">true</span>, the configuration of current object will be saved <span class="hljs-keyword">in</span> its annotation. Otherwise, the
+annotation will be unchanged. This flag is useful when you want to perform kubectl apply on this object <span class="hljs-keyword">in</span> the future.
+      --template=<span class="hljs-string">''</span>: Template string or path to template file to use when -o=go-template, -o=go-template-file. The
+template format is golang templates [http://golang.org/pkg/text/template/<span class="hljs-comment">#pkg-overview].</span>
+      --validate=<span class="hljs-literal">true</span>: If <span class="hljs-literal">true</span>, use a schema to validate the input before sending it
+
+Usage:
+  kubectl create deployment NAME --image=image [--dry-run] [options]
+
+Use <span class="hljs-string">"kubectl options"</span> <span class="hljs-keyword">for</span> a list of global <span class="hljs-built_in">command</span>-line options (applies to all commands).
+</div></code></pre>
+        <ul>
+            <li>generate a template ( don't forget to put --dry-run=true otherwise it will submit to APIs Server)</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create deploy webserver --image=nginx:alpine -o yaml --dry-run=<span class="hljs-literal">true</span> &gt; webserver.yaml
+
+$ kubectl get deploy
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+        <ul>
+            <li>cat it</li>
+        </ul>
+        <pre><code class="language-yaml"><div><span class="hljs-string">$</span> <span class="hljs-string">cat</span> <span class="hljs-string">webserver.yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">webserver</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  replicas:</span> <span class="hljs-number">1</span>
+<span class="hljs-attr">  selector:</span>
+<span class="hljs-attr">    matchLabels:</span>
+<span class="hljs-attr">      app:</span> <span class="hljs-string">webserver</span>
+<span class="hljs-attr">  strategy:</span> <span class="hljs-string">{}</span>
+<span class="hljs-attr">  template:</span>
+<span class="hljs-attr">    metadata:</span>
+<span class="hljs-attr">      creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">      labels:</span>
+<span class="hljs-attr">        app:</span> <span class="hljs-string">webserver</span>
+<span class="hljs-attr">    spec:</span>
+<span class="hljs-attr">      containers:</span>
+<span class="hljs-attr">      - image:</span> <span class="hljs-attr">nginx:alpine</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">        resources:</span> <span class="hljs-string">{}</span>
+<span class="hljs-attr">status:</span> <span class="hljs-string">{}</span>
+</div></code></pre>
+        <ul>
+            <li>edit it</li>
+        </ul>
+        <pre><code class="language-yaml"><div><span class="hljs-string">$</span> <span class="hljs-string">cat</span> <span class="hljs-string">webserver.yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">webserver</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  replicas:</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">  selector:</span>
+<span class="hljs-attr">    matchLabels:</span>
+<span class="hljs-attr">      app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">  template:</span>
+<span class="hljs-attr">    metadata:</span>
+<span class="hljs-attr">      labels:</span>
+<span class="hljs-attr">        app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    spec:</span>
+<span class="hljs-attr">      containers:</span>
+<span class="hljs-attr">      - image:</span> <span class="hljs-attr">nginx:alpine</span>
+<span class="hljs-attr">        name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">        ports:</span>
+<span class="hljs-attr">        - containerPort:</span> <span class="hljs-number">80</span>
+
+</div></code></pre>
+        <ul>
+            <li>create deployment</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create -f webserver.yaml
+deployment.apps/webserver created
+</div></code></pre>
+        <ul>
+            <li>the above deployment will also create a ReplicaSet and Pods as defined in the YAML configuration file.
+            </li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get deploy,rs,pods
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/webserver   3/3     3            3           62s
+
+NAME                                   DESIRED   CURRENT   READY   AGE
+replicaset.apps/webserver-5c559d5697   3         3         3       62s
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/webserver-5c559d5697-7bz8p   1/1     Running   0          62s
+pod/webserver-5c559d5697-c5ncg   1/1     Running   0          62s
+pod/webserver-5c559d5697-rlb26   1/1     Running   0          62s
+</div></code></pre>
+        <ul>
+            <li>
+                <p>current state
+                    <img src="https://i.imgur.com/xD9Ha2i.png" alt="Imgur"></p>
+            </li>
+            <li>
+                <p>Let's use the <strong>NodePort</strong> ServiceType while creating a Service.</p>
+            </li>
+            <li>
+                <p>ask for help</p>
+            </li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create service --<span class="hljs-built_in">help</span>
+Create a service using specified subcommand.
+
+Aliases:
+service, svc
+
+Available Commands:
+  clusterip    Create a ClusterIP service.
+  externalname Create an ExternalName service.
+  loadbalancer Create a LoadBalancer service.
+  nodeport     Create a NodePort service.
+
+Usage:
+  kubectl create service [flags] [options]
+
+Use <span class="hljs-string">"kubectl &lt;command&gt; --help"</span> <span class="hljs-keyword">for</span> more information about a given <span class="hljs-built_in">command</span>.
+Use <span class="hljs-string">"kubectl options"</span> <span class="hljs-keyword">for</span> a list of global <span class="hljs-built_in">command</span>-line options (applies to all commands).
+</div></code></pre>
+        <ul>
+            <li>generate service template</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create service nodeport web-service --tcp=80 --dry-run=<span class="hljs-literal">true</span> -o yaml &gt; webserver-svc.yaml
+</div></code></pre>
+        <ul>
+            <li>edit it , as following :</li>
+        </ul>
+        <pre><code class="language-YAML"><div><span class="hljs-string">$</span> <span class="hljs-string">cat</span> <span class="hljs-string">webserver-svc.yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    run:</span> <span class="hljs-string">web-service</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">web-service</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  ports:</span>
+<span class="hljs-attr">  - port:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    protocol:</span> <span class="hljs-string">TCP</span>
+<span class="hljs-attr">  selector:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">  type:</span> <span class="hljs-string">NodePort</span>
+</div></code></pre>
+        <ul>
+            <li>Using kubectl, create the service.</li>
+            <li>Before create the service, list the current servcies</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    &lt;none&gt;        443/TCP   4h44m
+</div></code></pre>
+        <ul>
+            <li>create service</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create -f webserver-svc.yaml
+service/web-service created
+</div></code></pre>
+        <ul>
+            <li>get services</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get services
+NAME          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+kubernetes    ClusterIP   10.96.0.1      &lt;none&gt;        443/TCP        4h45m
+web-service   NodePort    10.100.52.43   &lt;none&gt;        80:30387/TCP   23s
+</div></code></pre>
+        <ul>
+            <li>A more direct method of creating a Service is by exposing the previously created Deployment (this method
+                requires an existing Deployment)</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl expose deployment webserver --port=81 --target-port=80 --<span class="hljs-built_in">type</span>=NodePort
+</div></code></pre>
+        <ul>
+            <li>check services</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get services
+NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+kubernetes    ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP        4h54m
+web-service   NodePort    10.100.52.43     &lt;none&gt;        80:30387/TCP   8m57s
+webserver     NodePort    10.107.217.161   &lt;none&gt;        81:31838/TCP   16s
+</div></code></pre>
+        <ul>
+            <li>our web-servcie is now created and its ClusterIP is 10.100.52.43. In the PORT(s) sections.</li>
+            <li>a mapping of 80:30387 means that we have reserved a static port 30387 on the node. If we connect to the
+                node on that port, our request will be proxied to the ClusterIP on port 80.</li>
+            <li>It is not necessary to create the Deployment first, and the Service after. They can be created in any
+                order.</li>
+            <li>A service will find and connect Pods based on the Selector.</li>
+            <li>To get more details about the Service, we can use the <strong>kubectl describe</strong> command, as in
+                the following example:</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl describe service web-service
+Name:                     web-service
+Namespace:                default
+Labels:                   run=web-service
+Annotations:              &lt;none&gt;
+Selector:                 app=nginx
+Type:                     NodePort
+IP:                       10.100.52.43
+Port:                     &lt;<span class="hljs-built_in">unset</span>&gt;  80/TCP
+TargetPort:               80/TCP
+NodePort:                 &lt;<span class="hljs-built_in">unset</span>&gt;  30387/TCP
+Endpoints:                172.17.0.4:80,172.17.0.5:80,172.17.0.6:80
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   &lt;none&gt;
+
+</div></code></pre>
+        <ul>
+            <li>
+                <p>web-service uses app=nginx as a selector to logically group our three Pods, which are listed as
+                    endpoints.</p>
+            </li>
+            <li>
+                <p>When a request reaches our Service, it will be served by one of the Pods listed in the Endpoints
+                    section.</p>
+            </li>
+            <li>
+                <p>get Node ip</p>
+            </li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl describe node minikube | grep IP
+  InternalIP:  192.168.99.101
+</div></code></pre>
+        <ul>
+            <li>get service NodePort</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl describe services web-service | grep NodePort
+Type:                     NodePort
+NodePort:                 &lt;<span class="hljs-built_in">unset</span>&gt;  30387/TCP
+</div></code></pre>
+        <ul>
+            <li>
+                <p>go to 192.168.99.101:30387
+                    <img src="https://i.imgur.com/UIhUluk.png" alt="Imgur"></p>
+            </li>
+            <li>
+                <p>or we can find ip with minikube ip</p>
+            </li>
+        </ul>
+        <pre><code class="language-bash"><div>$ minikube ip
+192.168.99.101
+</div></code></pre>
+        <ul>
+            <li>We could also run minikube service command</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ minikube service web-service
+|-----------|-------------|-------------|-----------------------------|
+| NAMESPACE |    NAME     | TARGET PORT |             URL             |
+|-----------|-------------|-------------|-----------------------------|
+| default   | web-service |             | http://192.168.99.101:30387 |
+|-----------|-------------|-------------|-----------------------------|
+* Opening service default/web-service <span class="hljs-keyword">in</span> default browser...
+</div></code></pre>
+        <ul>
+            <li>Our requests could be served by either one of the three endpoints logically groupped by the Service
+                since the Service acts as a Load Balancer in front of its endpoints.</li>
+        </ul>
+        <h2 id="liveness-and-readiness-probes">Liveness and Readiness Probes.</h2>
+        <ul>
+            <li>Liveness = container run but an app inside that die.</li>
+            <li>at times the applications may become unresponsive or may be delayed during startup.</li>
+            <li>Implementing Liveness and Readiness Probes allows the kubelet to control the health of the application
+                running inside a Pod's container and force a container restart of an unresponsive application.</li>
+            <li>When defining both Readiness and Liveness Probes, it is recommended to allow enough time for the
+                Readiness Probe to possibly fail a few times before a pass, and only then check the Liveness Probe.</li>
+            <li>If Readiness and Liveness Probes overlap there may be a risk that the container never reaches ready
+                state.</li>
+        </ul>
+        <h3 id="liveness">Liveness</h3>
+        <ul>
+            <li>if a container in the Pod is running, but the application inside this container is not responding to our
+                requests, then that container is off no use to us.</li>
+            <li>Above example can occur, for example, due to application deadlock or memory pressure. In such case, it
+                is recommended to restart the container to make the application available.</li>
+            <li>Rather than restarting it manually, we can use a Liveness Probe.</li>
+            <li>Liveness probe checks on an application's health, and if the health check fails, kubelet restarts the
+                affected container automatically.</li>
+            <li>Liveness Probes can be set by defining:
+                <ul>
+                    <li>Liveness command</li>
+                    <li>Liveness HTTP request</li>
+                    <li>TCP Liveness Probe</li>
+                </ul>
+            </li>
+        </ul>
+        <h3 id="liveness--command">Liveness : Command</h3>
+        <ul>
+            <li>Example:
+                <pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    test:</span> <span class="hljs-string">liveness</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">liveness-exec</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - name:</span> <span class="hljs-string">liveness</span>
+<span class="hljs-attr">    image:</span> <span class="hljs-string">k8s.gcr.io/busybox</span>
+<span class="hljs-attr">    args:</span>
+<span class="hljs-bullet">    -</span> <span class="hljs-string">/bin/sh</span>
+<span class="hljs-bullet">    -</span> <span class="hljs-bullet">-c</span>
+<span class="hljs-bullet">    -</span> <span class="hljs-string">touch</span> <span class="hljs-string">/tmp/healthy;</span> <span class="hljs-string">sleep</span> <span class="hljs-number">30</span><span class="hljs-string">;</span> <span class="hljs-string">rm</span> <span class="hljs-bullet">-rf</span> <span class="hljs-string">/tmp/healthy;</span> <span class="hljs-string">sleep</span> <span class="hljs-number">600</span>
+<span class="hljs-attr">    livenessProbe:</span>
+<span class="hljs-attr">      exec:</span>
+<span class="hljs-attr">        command:</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">cat</span>
+<span class="hljs-bullet">        -</span> <span class="hljs-string">/tmp/healthy</span>
+<span class="hljs-attr">      initialDelaySeconds:</span> <span class="hljs-number">5</span>
+<span class="hljs-attr">      periodSeconds:</span> <span class="hljs-number">5</span>
+</div></code></pre>
+                <ul>
+                    <li>the existence of the /tmp/healthy file is configured to be checked every 5 seconds using
+                        <strong>periodSeconds</strong> parameter.</li>
+                    <li>The <strong>initialDelaySeconds</strong> parameter requests the kubelet to wait for 5 second
+                        before the first probe.</li>
+                    <li>When running the command line argument to the container, we will first create the
+                        <strong>/tmp/healthy</strong> file, and then we will remove it after 30 seconds. The deletion of
+                        the file would trigger a health failure, and our Pod would get restarted.</li>
+                </ul>
+                <pre><code class="language-yaml"><div><span class="hljs-string">$</span> <span class="hljs-string">cat</span> <span class="hljs-string">exec-liveness.yaml</span>
+<span class="hljs-attr">  apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">  kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">  metadata:</span>
+<span class="hljs-attr">    labels:</span>
+<span class="hljs-attr">      test:</span> <span class="hljs-string">liveness</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">liveness-exec</span>
+<span class="hljs-attr">  spec:</span>
+<span class="hljs-attr">    containers:</span>
+<span class="hljs-attr">    - name:</span> <span class="hljs-string">liveness</span>
+<span class="hljs-attr">      image:</span> <span class="hljs-string">k8s.gcr.io/busybox</span>
+<span class="hljs-attr">      args:</span>
+<span class="hljs-bullet">      -</span> <span class="hljs-string">/bin/sh</span>
+<span class="hljs-bullet">      -</span> <span class="hljs-bullet">-c</span>
+<span class="hljs-bullet">      -</span> <span class="hljs-string">touch</span> <span class="hljs-string">/tmp/healthy;</span> <span class="hljs-string">sleep</span> <span class="hljs-number">30</span><span class="hljs-string">;</span> <span class="hljs-string">rm</span> <span class="hljs-bullet">-rf</span> <span class="hljs-string">/tmp/healthy;</span> <span class="hljs-string">sleep</span> <span class="hljs-number">600</span>
+<span class="hljs-attr">      livenessProbe:</span>
+<span class="hljs-attr">        exec:</span>
+<span class="hljs-attr">          command:</span>
+<span class="hljs-bullet">          -</span> <span class="hljs-string">cat</span>
+<span class="hljs-bullet">          -</span> <span class="hljs-string">/tmp/healthy</span>
+<span class="hljs-attr">        initialDelaySeconds:</span> <span class="hljs-number">5</span>
+<span class="hljs-attr">        periodSeconds:</span> <span class="hljs-number">5</span>
+</div></code></pre>
+                <ul>
+                    <li>Create pod</li>
+                </ul>
+                <pre><code class="language-bash"><div>$ kubectl create -f <span class="hljs-built_in">exec</span>-liveness.yaml
+pod/liveness-exec created
+</div></code></pre>
+                <ul>
+                    <li>Check pod</li>
+                </ul>
+                <pre><code class="language-bash"><div>$ kubectl get pods
+NAME                         READY   STATUS    RESTARTS   AGE
+liveness-exec                1/1     Running   0          6s
+</div></code></pre>
+                <ul>
+                    <li>Describe the pod</li>
+                </ul>
+                <pre><code class="language-bash"><div>$ kubectl describe pod liveness-exec
+Name:         liveness-exec
+Namespace:    default
+Priority:     0
+Node:         minikube/192.168.99.101
+Start Time:   Fri, 28 Feb 2020 16:39:56 +0700
+Labels:       <span class="hljs-built_in">test</span>=liveness
+Annotations:  &lt;none&gt;
+Status:       Running
+IP:           172.17.0.7
+IPs:
+  IP:  172.17.0.7
+Containers:
+  liveness:
+    Container ID:  docker://7a4ace7f1b865ee7b8b06dd79c53f89cacdd7853c1a25ff97539f2b32e22cec2
+    Image:         k8s.gcr.io/busybox
+    Image ID:      docker-pullable://k8s.gcr.io/busybox@sha256:d8d3bc2c183ed2f9f10e7258f84971202325ee6011ba137112e01e30f206de67
+    Port:          &lt;none&gt;
+    Host Port:     &lt;none&gt;
+    Args:
+      /bin/sh
+      -c
+      touch /tmp/healthy; sleep 30; rm -rf /tmp/healthy; sleep 600
+    State:          Running
+      Started:      Fri, 28 Feb 2020 16:42:29 +0700
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    137
+      Started:      Fri, 28 Feb 2020 16:41:14 +0700
+      Finished:     Fri, 28 Feb 2020 16:42:28 +0700
+    Ready:          True
+    Restart Count:  2
+    Liveness:       <span class="hljs-built_in">exec</span> [cat /tmp/healthy] delay=5s timeout=1s period=5s <span class="hljs-comment">#success=1 #failure=3</span>
+    Environment:    &lt;none&gt;
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-42lts (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  default-token-42lts:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-42lts
+    Optional:    <span class="hljs-literal">false</span>
+QoS Class:       BestEffort
+Node-Selectors:  &lt;none&gt;
+Tolerations:     node.kubernetes.io/not-ready:NoExecute <span class="hljs-keyword">for</span> 300s
+                node.kubernetes.io/unreachable:NoExecute <span class="hljs-keyword">for</span> 300s
+Events:
+  Type     Reason     Age                  From               Message
+  ----     ------     ----                 ----               -------
+  Normal   Scheduled  2m48s                default-scheduler  Successfully assigned default/liveness-exec to minikube
+  Warning  Unhealthy  46s (x6 over 2m11s)  kubelet, minikube  Liveness probe failed: cat: can<span class="hljs-string">'t open '</span>/tmp/healthy<span class="hljs-string">': No such file or directory
+  Normal   Killing    46s (x2 over 2m1s)   kubelet, minikube  Container liveness failed liveness probe, will be restarted
+  Normal   Pulling    16s (x3 over 2m47s)  kubelet, minikube  Pulling image "k8s.gcr.io/busybox"
+  Normal   Pulled     15s (x3 over 2m46s)  kubelet, minikube  Successfully pulled image "k8s.gcr.io/busybox"
+  Normal   Created    15s (x3 over 2m45s)  kubelet, minikube  Created container liveness
+  Normal   Started    15s (x3 over 2m45s)  kubelet, minikube  Started container liveness
+</span></div></code></pre>
+                <ul>
+                    <li>delete the pod</li>
+                </ul>
+                <pre><code class="language-bash"><div>$ kubectl delete pod liveness-exec
+pod <span class="hljs-string">"liveness-exec"</span> deleted
+</div></code></pre>
+            </li>
+        </ul>
+        <h3 id="liveness-http-request">Liveness HTTP Request</h3>
+        <ul>
+            <li>Example: kubectl sends the <strong>HTTP GET</strong> request to the <strong>/healthz</strong> endpoint
+                of the application, on port 8080.</li>
+            <li>if that returns a failure, then kubelet will restart the affected container; otherwise, it would
+                consider the application to be alive.</li>
+        </ul>
+        <pre><code class="language-YAML"><div><span class="hljs-attr">livenessProbe:</span>
+<span class="hljs-attr">      httpGet:</span>
+<span class="hljs-attr">        path:</span> <span class="hljs-string">/healthz</span>
+<span class="hljs-attr">        port:</span> <span class="hljs-number">8080</span>
+<span class="hljs-attr">        httpHeaders:</span>
+<span class="hljs-attr">        - name:</span> <span class="hljs-string">X-Custom-Header</span>
+<span class="hljs-attr">          value:</span> <span class="hljs-string">Awesome</span>
+<span class="hljs-attr">      initialDelaySeconds:</span> <span class="hljs-number">3</span>
+<span class="hljs-attr">      periodSeconds:</span> <span class="hljs-number">3</span>
+</div></code></pre>
+        <h3 id="tcp-liveness-probe">TCP Liveness Probe</h3>
+        <ul>
+            <li>kubelet attempts to open the TCP socket to the container which is running the application.</li>
+            <li>if it succeeds, the application is considered healthy, otherwise the kubelet would mark it as unhealthy
+                and restart the affected container.</li>
+        </ul>
+        <pre><code class="language-YAML"><div><span class="hljs-attr">livenessProbe:</span>
+<span class="hljs-attr">      tcpSocket:</span>
+<span class="hljs-attr">        port:</span> <span class="hljs-number">8080</span>
+<span class="hljs-attr">      initialDelaySeconds:</span> <span class="hljs-number">15</span>
+<span class="hljs-attr">      periodSeconds:</span> <span class="hljs-number">20</span>
+</div></code></pre>
+        <h2 id="readiness-probs">Readiness Probs</h2>
+        <ul>
+            <li>Applications have to meet certain conditions before they can serve traffic.</li>
+            <li>These conditions include ensuring that the depending service is ready, or acknowledging that a large
+                data set needs to be loaded, etc.</li>
+            <li>We use <strong>Readiness Probs</strong> and wait for a certain condition to occur. Only then, the
+                application can serve traffic.</li>
+            <li>A pod with containers that do not report ready status will not receive traffic from K8s Services.</li>
+            <li>Example:
+                <pre><code class="language-yaml"><div><span class="hljs-attr">readinessProbe:</span>
+<span class="hljs-attr">  exec:</span>
+<span class="hljs-attr">    command:</span>
+<span class="hljs-bullet">    -</span> <span class="hljs-string">cat</span>
+<span class="hljs-bullet">    -</span> <span class="hljs-string">/tmp/healthy</span>
+<span class="hljs-attr">  initialDelaySeconds:</span> <span class="hljs-number">5</span>
+<span class="hljs-attr">  periodSeconds:</span> <span class="hljs-number">5</span>
+</div></code></pre>
+            </li>
+            <li>Readiness Probes are configured similarly to Liveness Probs. Their configuration also remains the same.
+            </li>
+            <li><a
+                    href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/">Official
+                    Document</a></li>
+        </ul>
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>

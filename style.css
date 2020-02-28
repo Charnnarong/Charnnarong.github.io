@@ -42,6 +42,15 @@ body {
     box-sizing: inherit;
 }
 
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+}
+
 .online-course {
     margin-top: 5vh;
 }
