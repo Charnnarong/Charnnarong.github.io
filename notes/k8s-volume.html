@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Kubernetes Volume</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+
+        <h1 id="volume">Volume</h1>
+        <ul>
+            <li>All data stored inside a container is deleted if the container crashes.</li>
+            <li>The kubelet will restart it with a clean slate, which means that it will not have any of the old data.
+            </li>
+            <li>To overcome this problem, k8s uses <a
+                    href="https://kubernetes.io/docs/concepts/storage/volumes/">Volumes</a>.</li>
+            <li>A Volume is essentially a directory backed by a storage medium.</li>
+            <li>The storage medium content and access mode are dertrmined by the Volume Type.
+                <img src="https://i.imgur.com/3AFEDvb.png" alt="Imgur"></li>
+            <li>In k8s, a <strong>Volume is attatched to a Pod</strong> and can be shared among the containers of that
+                Pod.</li>
+            <li>The Volume has the same life span as the Pod</li>
+            <li>Volume outlives the containers of the Pod - this allows data to be perserved accross container restarts.
+            </li>
+        </ul>
+        <h3 id="volume-types">Volume Types</h3>
+        <ul>
+            <li>A directory which is mounted inside a Pod is backed by the underlying Volume Type.</li>
+            <li>A Volume Type decides the properties of the directory, like size, content, default access modes,etc.
+                Some example of volume Types are :</li>
+            <li><strong>emptyDir</strong>
+                <ul>
+                    <li>An empty Volume is created for the Pod as soon as it is scheduled on the worker node.</li>
+                    <li>The Volume's life is tighly coupled with the Pod.</li>
+                    <li>If the Pod is terminated, the content of <strong>emptyDir</strong> is delete forever.</li>
+                </ul>
+            </li>
+            <li><strong>hostPath</strong>
+                <ul>
+                    <li>we can share a directory from the host to the Pod.</li>
+                    <li>If the Pod is terminated, the content of the Volume is still available on the host.</li>
+                </ul>
+            </li>
+            <li><strong>gcePersistentDisk</strong>
+                <ul>
+                    <li>we can mount a <a href="https://cloud.google.com/compute/docs/disks/">Google Compute Engine
+                            (GCE) persistent disk</a> into a Pod.</li>
+                </ul>
+            </li>
+            <li><strong>awsElasticBlockStore</strong>
+                <ul>
+                    <li>we can mount an <a href="https://aws.amazon.com/ebs/">AWS EBS Volume</a> into a Pod</li>
+                </ul>
+            </li>
+            <li><strong>azureDisk</strong>
+                <ul>
+                    <li>we can mount <a
+                            href="https://docs.microsoft.com/en-us/azure/virtual-machines/linux/managed-disks-overview">Microsoft
+                            Azure Data Disk</a> into a Pod</li>
+                </ul>
+            </li>
+            <li><strong>azureFile</strong>
+                <ul>
+                    <li>we cam mount <a
+                            href="https://github.com/kubernetes/examples/blob/master/staging/volumes/azure_file/README.md">Microsoft
+                            Azure File Volume</a> into a Pod.</li>
+                </ul>
+            </li>
+            <li><strong>cephfs</strong>
+                <ul>
+                    <li>an existing CephFS Volume can be mounted into a Pod.</li>
+                    <li>When a Pod terminates, the volume is unmounted and the contents of the volume are preserved.
+                    </li>
+                </ul>
+            </li>
+            <li><strong>nfs</strong>
+                <ul>
+                    <li>we can mount an NFS share into a Pod.</li>
+                </ul>
+            </li>
+            <li><strong>iscsi</strong>
+                <ul>
+                    <li>mount an <strong>iSCSI</strong> share into a Pod.</li>
+                </ul>
+            </li>
+            <li><strong>secret</strong>
+                <ul>
+                    <li>we can pass sensitive information, such as passwords, to Pods.</li>
+                </ul>
+            </li>
+            <li><strong>configMap</strong>
+                <ul>
+                    <li>we can provide configuration data, or shell commands and argument into a Pod.</li>
+                </ul>
+            </li>
+            <li><strong>persistentVolumeClaim</strong>
+                <ul>
+                    <li>we can attatch a <a
+                            href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/">PersistentVolume</a>
+                        to a Pod using a <strong>persistentVolumeClaim</strong></li>
+                </ul>
+            </li>
+            <li><a href="https://kubernetes.io/docs/concepts/storage/volumes/">Official Document</a></li>
+        </ul>
+        <h2 id="persistentvolumes">PersistentVolumes</h2>
+        <ul>
+            <li>PersistentVolume(PV) provides APIs for users and administrators to manage and consume persistent
+                sotrage.</li>
+            <li>To <strong>manage</strong> the Volume, it uses the <strong>PersistentVolume</strong> API resoruce type.
+            </li>
+            <li>To <strong>consume</strong> it, it uses the <strong>PersistentVolumeClaim</strong> API resoruce Type.
+            </li>
+            <li>A Persistent Volume is a <strong>network-attached storage</strong> in the cluster, which is provisioned
+                by the adminstrator.
+                <img src="https://i.imgur.com/1xzXwf8.png" alt="Imgur"></li>
+            <li>PersistentVolumes can be dynamically provisioned based on the StorageClass resource.</li>
+            <li>A StorageClass contains pre-defined provisioners and parameters to create a PersistentVolume.</li>
+            <li>Using PersistentVolumeClaims, a user sends the request for dymanic PV creation, which gets wired to the
+                StorageClass resoruce.</li>
+            <li>Some of the Volume Types that support managing storage using PersistentVolumes are :
+                <ul>
+                    <li>GCEPersistentDisk</li>
+                    <li>AWSElasticBlockStore</li>
+                    <li>AzureFile</li>
+                    <li>AzureDisk</li>
+                    <li>CephFS</li>
+                    <li>NFS</li>
+                    <li>iSCSI</li>
+                    <li><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistent-volumes">Complete
+                            list</a></li>
+                </ul>
+            </li>
+        </ul>
+        <h2 id="persistentvolumeclaims">PersistentVolumeClaims</h2>
+        <ul>
+            <li>A PersistentVolumeClaim(PVC) is a reqeust for storage by a user.</li>
+            <li>Users reqeust for PersistentVolume resoruce based on type, access mode, and size.</li>
+            <li>There are three access modes:
+                <ul>
+                    <li>ReadWriteOnce(read-write by a single node)</li>
+                    <li>ReadOnlyMany(read-only by mana nodes)</li>
+                    <li>ReadWriteMany(read-write by many nodes)</li>
+                </ul>
+            </li>
+            <li>Once a suitable PersistentVolume is found, it is bound to a PersistentVolumeClaim.
+                <img src="https://i.imgur.com/ZTeOWGi.png" alt="Imgur">
+                <em>PersistentVolumeClaim</em></li>
+            <li>After a successful bound, the PersistentVolumeClaim resoruce can be used in a Pod.
+                <img src="https://i.imgur.com/HGBiG8A.png" alt="Imgur"></li>
+            <li>Once a user finishes its work, the attached PersistentVlumes can be released.</li>
+            <li>The underlying PersistentVlumes can then be reclaimed (for an admin to verify and/or aggregate data),
+                delete(both data and volume are deleted), or recycled for futher usage(only data is deleted).</li>
+            <li><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims">More
+                    details on</a></li>
+        </ul>
+        <h2 id="container-storage-interface-csi">Container Storage Interface (CSI)</h2>
+        <ul>
+            <li>Container orchestrator like K8s, Mesos, Docker or Colud Foundry used to have their own methods of
+                managing external storage using Volumes.</li>
+            <li>It was challenging for storage vendors to manage different Volume plugins for different orchestrators.
+            </li>
+            <li>Storage vendors and community members from different orchestrators started working together to
+                standardize the Volume interface.</li>
+            <li>a Vlume plugin build using a standardized CSI designed to work on different container orchestrators. <a
+                    href="https://github.com/container-storage-interface/spec/blob/master/spec.md">Specifications
+                    here</a></li>
+            <li>With CSI, thrid-party storage providers can <a href="https://kubernetes-csi.github.io/docs/">develop
+                    solutions</a> without the need to add them into the core Kubernetes codebase.</li>
+        </ul>
+        <hr>
+        <h2 id="demo">Demo</h2>
+        <ul>
+            <li>create an empty directory in minikube vm</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ minikube ssh
+                         _             _
+            _         _ ( )           ( )
+  ___ ___  (_)  ___  (_)| |/<span class="hljs-string">')  _   _ | |_      __
+/'</span> _ ` _ `\| |/<span class="hljs-string">' _ `\| || , &lt;  ( ) ( )| '</span>_`\  /<span class="hljs-string">'__`\
+| ( ) ( ) || || ( ) || || |\`\ | (_) || |_) )(  ___/
+(_) (_) (_)(_)(_) (_)(_)(_) (_)`\___/'</span>(_,__/<span class="hljs-string">'`\____)
+
+$ ls
+$ mkdir pod-volume
+$ ls
+pod-volume
+$ cd pod-volume/
+$ pwd
+/home/docker/pod-volume
+$ exit
+logout
+
+</span></div></code></pre>
+        <ul>
+            <li>create Pod resources, by using kubectl to generate.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl run --<span class="hljs-built_in">help</span>
+...
+...
+--restart=<span class="hljs-string">'Always'</span>: The restart policy <span class="hljs-keyword">for</span> this Pod.  Legal values [Always, OnFailure, Never].  If <span class="hljs-built_in">set</span> to <span class="hljs-string">'Always'</span>
+a deployment is created, <span class="hljs-keyword">if</span> <span class="hljs-built_in">set</span> to <span class="hljs-string">'OnFailure'</span> a job is created, <span class="hljs-keyword">if</span> <span class="hljs-built_in">set</span> to <span class="hljs-string">'Never'</span>, a regular pod is created. For the
+latter two --replicas must be 1.  Default <span class="hljs-string">'Always'</span>, <span class="hljs-keyword">for</span> CronJobs `Never`.
+</div></code></pre>
+        <ul>
+            <li>so</li>
+        </ul>
+        <pre><code class="language-YAML"><div><span class="hljs-string">$</span> <span class="hljs-string">kubectl</span> <span class="hljs-string">run</span> <span class="hljs-string">share-pod</span> <span class="hljs-bullet">--image=nginx</span> <span class="hljs-bullet">--restart=Never</span> <span class="hljs-bullet">--port=80</span> <span class="hljs-bullet">--dry-run</span> <span class="hljs-bullet">-o</span> <span class="hljs-string">yaml</span>
+
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    run:</span> <span class="hljs-string">share-pod</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">share-pod</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">share-pod</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    resources:</span> <span class="hljs-string">{}</span>
+<span class="hljs-attr">  dnsPolicy:</span> <span class="hljs-string">ClusterFirst</span>
+<span class="hljs-attr">  restartPolicy:</span> <span class="hljs-string">Never</span>
+<span class="hljs-attr">status:</span> <span class="hljs-string">{}</span>
+
+</div></code></pre>
+        <ul>
+            <li>write to file</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl run share-pod --image=nginx --restart=Never --port=80 --dry-run -o yaml &gt; share-pod.yaml
+</div></code></pre>
+        <ul>
+            <li>vim it to edit as follow</li>
+        </ul>
+        <pre><code class="language-YAML"><div><span class="hljs-string">$</span> <span class="hljs-string">cat</span> <span class="hljs-string">share-pod.yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    run:</span> <span class="hljs-string">share-pod</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">share-pod</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  volumes:</span>
+<span class="hljs-attr">  - name:</span> <span class="hljs-string">host-volume</span>
+<span class="hljs-attr">    hostPath:</span>
+<span class="hljs-attr">      path:</span> <span class="hljs-string">/home/docker/pod-volume</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    volumeMounts:</span>
+<span class="hljs-attr">    - mountPath:</span> <span class="hljs-string">/usr/share/nginx/html</span>
+<span class="hljs-attr">      name:</span> <span class="hljs-string">host-volume</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">debian</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">debian</span>
+<span class="hljs-attr">    volumeMounts:</span>
+<span class="hljs-attr">    - mountPath:</span> <span class="hljs-string">/host-vol</span>
+<span class="hljs-attr">      name:</span> <span class="hljs-string">host-volume</span>
+<span class="hljs-attr">    command:</span> <span class="hljs-string">["/bin/sh","-c",</span> <span class="hljs-string">"echo Introduction to Kubernetes &gt; /host-vol/index.html; sleep 3600"</span><span class="hljs-string">]</span>
+</div></code></pre>
+        <ul>
+            <li>creat it</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create -f share-pod.yaml
+pod/share-pod created
+</div></code></pre>
+        <ul>
+            <li>show pods</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods
+NAME        READY   STATUS              RESTARTS   AGE
+share-pod   0/2     ContainerCreating   0          4s
+
+$ kubectl get pods
+NAME        READY   STATUS    RESTARTS   AGE
+share-pod   2/2     Running   0          46s
+</div></code></pre>
+        <ul>
+            <li>export service</li>
+        </ul>
+        <pre><code><code><div>$ kubectl expose pod share-pod --port=80 --type=NodePort
+service/share-pod exposed
+</div></code></code></pre>
+        <ul>
+            <li>list services and endpoints</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get services,endpoints
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes   ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP        41h
+service/share-pod    NodePort    10.110.127.14   &lt;none&gt;        80:31642/TCP   28s
+
+NAME                   ENDPOINTS             AGE
+endpoints/kubernetes   192.168.99.106:8443   41h
+endpoints/share-pod    172.17.0.6:80         28s
+</div></code></pre>
+        <ul>
+            <li>access nginx</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ minikube service share-pod
+|-----------|-----------|-------------|-----------------------------|
+| NAMESPACE |   NAME    | TARGET PORT |             URL             |
+|-----------|-----------|-------------|-----------------------------|
+| default   | share-pod |             | http://192.168.99.106:31642 |
+|-----------|-----------|-------------|-----------------------------|
+* Opening service default/share-pod <span class="hljs-keyword">in</span> default browser...
+</div></code></pre>
+        <ul>
+            <li>e.g</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ curl http://192.168.99.106:31642/
+Introduction to Kubernetes
+</div></code></pre>
+        <ul>
+            <li>Let's terminate the pod.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl delete pod share-pod
+pod <span class="hljs-string">"share-pod"</span> deleted
+</div></code></pre>
+        <ul>
+            <li>check pods</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+        <ul>
+            <li>check services, and endpoints</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get services,endpoints
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes   ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP        41h
+service/share-pod    NodePort    10.110.127.14   &lt;none&gt;        80:31642/TCP   6m12s
+
+NAME                   ENDPOINTS             AGE
+endpoints/kubernetes   192.168.99.106:8443   41h
+endpoints/share-pod    &lt;none&gt;                6m12s
+</div></code></pre>
+        <ul>
+            <li>
+                <p>Service is still running</p>
+            </li>
+            <li>
+                <p>Endpoint doesn't show any more IPs, because the Pod has been terminated, and the Pod's IP has been
+                    released.</p>
+            </li>
+            <li>
+                <p>Create a new Pod</p>
+            </li>
+        </ul>
+        <pre><code class="language-yaml"><div><span class="hljs-string">$</span> <span class="hljs-string">kubectl</span> <span class="hljs-string">run</span> <span class="hljs-string">check-pod</span> <span class="hljs-bullet">--image=nginx</span> <span class="hljs-bullet">-l</span> <span class="hljs-string">app=share-pod</span> <span class="hljs-bullet">--restart=Never</span> <span class="hljs-bullet">--dry-run</span> <span class="hljs-bullet">-o</span> <span class="hljs-string">yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">share-pod</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">check-pod</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">check-pod</span>
+<span class="hljs-attr">    resources:</span> <span class="hljs-string">{}</span>
+<span class="hljs-attr">  dnsPolicy:</span> <span class="hljs-string">ClusterFirst</span>
+<span class="hljs-attr">  restartPolicy:</span> <span class="hljs-string">Never</span>
+<span class="hljs-attr">status:</span> <span class="hljs-string">{}</span>
+</div></code></pre>
+        <ul>
+            <li>save and edit it</li>
+        </ul>
+        <pre><code class="language-base"><code><div>$ kubectl run check-pod --image=nginx -l app=share-pod --restart=Never --dry-run -o yaml &gt; check-pod.yaml
+</div></code></code></pre>
+        <ul>
+            <li>cat it</li>
+        </ul>
+        <pre><code class="language-yaml"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">share-pod</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">check-pod</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  volumes:</span>
+<span class="hljs-attr">  - name:</span> <span class="hljs-string">check-volume</span>
+<span class="hljs-attr">    hostPath:</span>
+<span class="hljs-attr">      path:</span> <span class="hljs-string">/home/docker/pod-volume</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    volumeMounts:</span>
+<span class="hljs-attr">    - mountPath:</span> <span class="hljs-string">/usr/share/nginx/html</span>
+<span class="hljs-attr">      name:</span> <span class="hljs-string">check-volume</span>
+</div></code></pre>
+        <ul>
+            <li>create a pod</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl create -f check-pod.yaml
+pod/check-pod created
+</div></code></pre>
+        <ul>
+            <li>check Pods</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get pods
+NAME        READY   STATUS    RESTARTS   AGE
+check-pod   1/1     Running   0          25s
+</div></code></pre>
+        <ul>
+            <li>check services, endpoints</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get services,endpoints
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes   ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP        42h
+service/share-pod    NodePort    10.110.127.14   &lt;none&gt;        80:31642/TCP   66m
+
+NAME                   ENDPOINTS             AGE
+endpoints/kubernetes   192.168.99.106:8443   42h
+endpoints/share-pod    &lt;none&gt;                66m
+</div></code></pre>
+        <ul>
+            <li><strong>Problem</strong> : endpoints/share-pod is not up and running.</li>
+            <li>Describe <strong>service share-pod</strong></li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl describe services share-pod
+Name:                     share-pod
+Namespace:                default
+Labels:                   run=share-pod
+Annotations:              &lt;none&gt;
+Selector:                 run=share-pod
+Type:                     NodePort
+IP:                       10.110.127.14
+Port:                     &lt;<span class="hljs-built_in">unset</span>&gt;  80/TCP
+TargetPort:               80/TCP
+NodePort:                 &lt;<span class="hljs-built_in">unset</span>&gt;  31642/TCP
+Endpoints:                &lt;none&gt;
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   &lt;none&gt;
+</div></code></pre>
+        <ul>
+            <li>describe endpoint share-pod</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl describe endpoints share-pod
+Name:         share-pod
+Namespace:    default
+Labels:       run=share-pod
+Annotations:  &lt;none&gt;
+Subsets:
+Events:  &lt;none&gt;
+</div></code></pre>
+        <ul>
+            <li>describe check-pod</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl describe pod check-pod
+Name:         check-pod
+Namespace:    default
+Priority:     0
+Node:         minikube/192.168.99.106
+Start Time:   Sat, 29 Feb 2020 13:42:48 +0700
+Labels:       app=share-pod
+Annotations:  &lt;none&gt;
+Status:       Running
+IP:           172.17.0.6
+...
+...
+</div></code></pre>
+        <ul>
+            <li><strong>solution</strong> we need check-pod label to have run=share-pod</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl label pods check-pod run=share-pod
+pod/check-pod labeled
+</div></code></pre>
+        <ul>
+            <li>describe pod one more time.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl describe pod check-pod
+Name:         check-pod
+Namespace:    default
+Priority:     0
+Node:         minikube/192.168.99.106
+Start Time:   Sat, 29 Feb 2020 14:30:38 +0700
+Labels:       app=share-pod
+              run=share-pod
+Annotations:  &lt;none&gt;
+Status:       Running
+IP:           172.17.0.6
+....
+....
+</div></code></pre>
+        <ul>
+            <li>now we have all labels we need, check service and ednpoint one more time.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ kubectl get services,endpoints
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes   ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP        42h
+service/share-pod    NodePort    10.110.127.14   &lt;none&gt;        80:31642/TCP   79m
+
+NAME                   ENDPOINTS             AGE
+endpoints/kubernetes   192.168.99.106:8443   42h
+endpoints/share-pod    172.17.0.6:80         79m
+</div></code></pre>
+        <ul>
+            <li>got it.</li>
+        </ul>
+        <pre><code class="language-bash"><div>$ curl 192.168.99.106:31642
+Introduction to Kubernetes
+</div></code></pre>
+
+
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
