@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-62655793-4');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+    <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+    <title>Kubernetes Ingress</title>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+    <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+    <div class="nav-home">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+    <div class="vscode-light note-container">
+        
+        <h1 id="ingress">Ingress</h1>
+<ul>
+<li>problems
+<ul>
+<li>accessing deployed containerized application fro mthe exeternal world via <em>Services</em>.</li>
+<li>LoadBalancer ServiceType need support from the underlying infrastructure.</li>
+<li>LoadBalancer are limited and can be costly.</li>
+<li>Managing NodePort <em>ServiceType</em> can also be tricky at times, as we need to keep updating our proxy settings and keep track of the assigned ports.</li>
+</ul>
+</li>
+<li>Ingreass API resource, represents another layer of abstraction, deployed in front of the Service API resources.</li>
+<li>Offering a unified method of managing access to our applications fro mthe external world.</li>
+</ul>
+<h2 id="ingress-1">Ingress</h2>
+<ul>
+<li>With Servcies, routing rules are associated with a given Service. They exist for as long as the Service exists, and they are many rules because there are many Services in the cluster.</li>
+<li>If we can somehow decouple the routing rules from the application and centralize the rules management, we can then update our application without worrying about its external access. This can be done using the <strong>Ingress</strong> resource.</li>
+<li><em>&quot;An Ingress is a collection of rules that allow inbound connections to reach the cluster Services&quot;</em> <a href="https://kubernetes.io/docs/concepts/services-networking/ingress/">According to official</a></li>
+<li>Ingress configures a <strong>Layer 7</strong> (operates at the high‑level application layer) HTTP/HTTPS load balancer for Services and provides the following:
+<ul>
+<li>TLS(Transport Layer Security)</li>
+<li>Name-based virtual hosting</li>
+<li>Fanout routing</li>
+<li>Loadbalancing</li>
+<li>Custom rules.</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://i.imgur.com/vZxkFNC.png" alt="Imgur"></p>
+<pre><code>A Layer 7 load balancer terminates the network traffic and reads the message within. It can make a load‑balancing decision based on the content of the message (the URL or cookie, for example). It then makes a new TCP connection to the selected upstream server (or reuses an existing one, by means of HTTP keepalives) and writes the request to the server.
+</code></pre>
+<ul>
+<li>With Ingress, users do not connect directly to a Service.</li>
+<li>Users reach the Ingress endpoint, and , from there, the request forwarded to the desired Servcie.</li>
+<li>Example</li>
+</ul>
+<pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">networking.k8s.io/v1beta1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Ingress</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">virtual-host-ingress</span>
+<span class="hljs-attr">  namespace:</span> <span class="hljs-string">default</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  rules:</span>
+<span class="hljs-attr">  - host:</span> <span class="hljs-string">blue.example.com</span>
+<span class="hljs-attr">    http:</span>
+<span class="hljs-attr">      paths:</span>
+<span class="hljs-attr">      - backend:</span>
+<span class="hljs-attr">          serviceName:</span> <span class="hljs-string">webserver-blue-svc</span>
+<span class="hljs-attr">          servicePort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">  - host:</span> <span class="hljs-string">green.example.com</span>
+<span class="hljs-attr">    http:</span>
+<span class="hljs-attr">      paths:</span>
+<span class="hljs-attr">      - backend:</span>
+<span class="hljs-attr">          serviceName:</span> <span class="hljs-string">webserver-green-svc</span>
+<span class="hljs-attr">          servicePort:</span> <span class="hljs-number">80</span>
+</div></code></pre>
+<ul>
+<li>In the example, user request to both <strong><a href="http://blue.example.com">blue.example.com</a></strong> and <strong><a href="http://green.example.com">green.example.com</a></strong> would go to the same Ingress endpoint.</li>
+<li>From Ingress endpoint, they would be forwarded to <strong>webserver-blue-svc</strong>, and <strong>webserver-green-svc</strong>, respectively.</li>
+<li>The above example is an example of a <strong>Name-Based Virtual Hosting</strong> Ingress rule.</li>
+<li>We can also have <strong>Fanout</strong> Ingress rules, when reqeust to <strong><a href="http://example.com/blue">example.com/blue</a></strong> and <strong><a href="http://example.com/green">example.com/green</a></strong> would be forwarded to <strong>webserver-blue-svc</strong> and <strong>webserver-green-svc</strong> ,respectively</li>
+</ul>
+<pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">networking.k8s.io/v1beta1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Ingress</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">   name:</span> <span class="hljs-string">fan-out-ingress</span>
+<span class="hljs-attr">   namespace:</span> <span class="hljs-string">default</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  rules:</span>
+<span class="hljs-attr">  - host:</span> <span class="hljs-string">exmaple.com</span>
+<span class="hljs-attr">    http:</span>
+<span class="hljs-attr">      paths:</span>
+<span class="hljs-attr">      - path:</span> <span class="hljs-string">/blue</span>
+<span class="hljs-attr">        backend:</span>
+<span class="hljs-attr">          serviceName:</span> <span class="hljs-string">webserver-blue-svc</span>
+<span class="hljs-attr">          servicePort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">      - path:</span> <span class="hljs-string">/green</span>
+<span class="hljs-attr">        backend:</span>
+<span class="hljs-attr">          serviceName:</span> <span class="hljs-string">webservice-green-svc</span>
+<span class="hljs-attr">          servicePort:</span> <span class="hljs-number">80</span>
+</div></code></pre>
+<p><img src="https://i.imgur.com/o1uUR7G.png" alt="Imgur"></p>
+<ul>
+<li>The Ingress resource doesn't do any request forwarding by itself, it merely accepts the definitions of the traffic routing rules.</li>
+<li>The ingress is fullfilled by an Ingress Controller.</li>
+</ul>
+<h2 id="ingress-controller">Ingress Controller.</h2>
+<ul>
+<li>An <a href="https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/">Ingress Controller</a> is an application watching the Master Node's API server for changes in the Ingress resources and updates the Layer 7 Load Balancer accordingly.</li>
+<li>k8s supports different Ingress Controllers, and if needed, we can also build our own.<a href="https://github.com/kubernetes/ingress-gce/blob/master/README.md">GCE L7 Load Balancer</a> and <a href="https://github.com/kubernetes/ingress-nginx/blob/master/README.md">Nginx Ingress Controller</a> are commonly used Ingress Controller. Other controllers are <a href="https://istio.io/">Istio</a>, <a href="https://konghq.com/">Kong</a>, <a href="https://github.com/containous/traefik">Traefik</a>, etc</li>
+</ul>
+<h3 id="starting-the-ingress-controller-with-minikube">Starting the Ingress Controller with Minikube.</h3>
+<ul>
+<li>list added on</li>
+</ul>
+<pre><code class="language-bash"><div>$ minikube  addons list
+|-----------------------------|----------|--------------|
+|         ADDON NAME          | PROFILE  |    STATUS    |
+|-----------------------------|----------|--------------|
+| dashboard                   | minikube | disabled     |
+| default-storageclass        | minikube | enabled ✅   |
+| efk                         | minikube | disabled     |
+| freshpod                    | minikube | disabled     |
+| gvisor                      | minikube | disabled     |
+| helm-tiller                 | minikube | disabled     |
+| ingress                     | minikube | disabled     |
+| ingress-dns                 | minikube | disabled     |
+| istio                       | minikube | disabled     |
+| istio-provisioner           | minikube | disabled     |
+| logviewer                   | minikube | disabled     |
+| metrics-server              | minikube | disabled     |
+| nvidia-driver-installer     | minikube | disabled     |
+| nvidia-gpu-device-plugin    | minikube | disabled     |
+| registry                    | minikube | disabled     |
+| registry-creds              | minikube | disabled     |
+| storage-provisioner         | minikube | enabled ✅   |
+| storage-provisioner-gluster | minikube | disabled     |
+|-----------------------------|----------|--------------|
+</div></code></pre>
+<ul>
+<li>Minikube ships with the Nginx Ingress Controller setup as an addon, disabled by default.</li>
+<li>Enable ingress</li>
+</ul>
+<pre><code class="language-bash"><div>$ minikube addons <span class="hljs-built_in">enable</span> ingress
+* The <span class="hljs-string">'ingress'</span> addon is enabled
+</div></code></pre>
+<ul>
+<li>check it again.</li>
+</ul>
+<pre><code class="language-bash"><div>$ minikube  addons list
+|-----------------------------|----------|--------------|
+|         ADDON NAME          | PROFILE  |    STATUS    |
+|-----------------------------|----------|--------------|
+| dashboard                   | minikube | disabled     |
+| default-storageclass        | minikube | enabled ✅   |
+| efk                         | minikube | disabled     |
+| freshpod                    | minikube | disabled     |
+| gvisor                      | minikube | disabled     |
+| helm-tiller                 | minikube | disabled     |
+| ingress                     | minikube | enabled ✅   |
+| ingress-dns                 | minikube | disabled     |
+| istio                       | minikube | disabled     |
+| istio-provisioner           | minikube | disabled     |
+| logviewer                   | minikube | disabled     |
+| metrics-server              | minikube | disabled     |
+| nvidia-driver-installer     | minikube | disabled     |
+| nvidia-gpu-device-plugin    | minikube | disabled     |
+| registry                    | minikube | disabled     |
+| registry-creds              | minikube | disabled     |
+| storage-provisioner         | minikube | enabled ✅   |
+| storage-provisioner-gluster | minikube | disabled     |
+|-----------------------------|----------|--------------|
+</div></code></pre>
+<ul>
+<li>Once the Ingress Controller is deployed, we can create an Ingress resource using the kubectl create command.</li>
+</ul>
+<pre><code class="language-YAML"><div><span class="hljs-string">$</span> <span class="hljs-string">cat</span> <span class="hljs-string">virtual-host-ingress.yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">networking.k8s.io/v1beta1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Ingress</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">virtual-host-ingress</span>
+<span class="hljs-attr">  namespace:</span> <span class="hljs-string">default</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  rules:</span>
+<span class="hljs-attr">  - host:</span> <span class="hljs-string">blue.example.com</span>
+<span class="hljs-attr">    http:</span>
+<span class="hljs-attr">      paths:</span>
+<span class="hljs-attr">      - backend:</span>
+<span class="hljs-attr">          serviceName:</span> <span class="hljs-string">webserver-blue-svc</span>
+<span class="hljs-attr">          servicePort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">  - host:</span> <span class="hljs-string">green.example.com</span>
+<span class="hljs-attr">    http:</span>
+<span class="hljs-attr">      paths:</span>
+<span class="hljs-attr">      - backend:</span>
+<span class="hljs-attr">          serviceName:</span> <span class="hljs-string">webserver-green-svc</span>
+<span class="hljs-attr">          servicePort:</span> <span class="hljs-number">80</span>
+</div></code></pre>
+<ul>
+<li>show any existing ingress</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl get ing
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+<ul>
+<li>create it.</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl create -f virtual-host-ingress.yaml
+ingress.networking.k8s.io/virtual-host-ingress created
+</div></code></pre>
+<ul>
+<li>show it.</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl get ing
+NAME                   HOSTS                                ADDRESS   PORTS   AGE
+virtual-host-ingress   blue.example.com,green.example.com             80      17s
+</div></code></pre>
+<ul>
+<li>describe it.</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl describe ing virtual-host-ingress
+Name:             virtual-host-ingress
+Namespace:        default
+Address:
+Default backend:  default-http-backend:80 (&lt;none&gt;)
+Rules:
+  Host               Path  Backends
+  ----               ----  --------
+  blue.example.com
+                        webserver-blue-svc:80 (&lt;none&gt;)
+  green.example.com
+                        webserver-green-svc:80 (&lt;none&gt;)
+Annotations:
+Events:
+  Type    Reason  Age   From                      Message
+  ----    ------  ----  ----                      -------
+  Normal  CREATE  38s   nginx-ingress-controller  Ingress default/virtual-host-ingress
+</div></code></pre>
+<h2 id="access-service-using-ingress">Access Service Using Ingress.</h2>
+<ul>
+<li>With the Ingress resource we just create, we should now be able to access the <strong>webservice-blue-svc</strong> or <strong>webserver-green-svc</strong> service using <strong><a href="http://blue.exmaple.com">blue.exmaple.com</a></strong> and <strong><a href="http://green.example.com">green.example.com</a></strong> URLS.</li>
+<li>As our current setup is on Minikube, we will need to updat ethe host configuration file (<strong>/etc/hosts</strong> or ) on our workstation to the Minikube IP for those URLs.</li>
+</ul>
+<pre><code class="language-bash"><div>$ minikube ip
+192.168.99.106
+</div></code></pre>
+<ul>
+<li>on windows edit file <em>C:\Windows\System32\drivers\etc\hosts</em></li>
+</ul>
+<pre><code class="language-properties"><div><span class="hljs-meta">192.168.99.106</span> <span class="hljs-string">blue.example.com </span>
+<span class="hljs-meta">192.168.99.106</span> <span class="hljs-string">green.example.com </span>
+</div></code></pre>
+<ul>
+<li>when accesss via browser, it doesn't show anything yet.
+<img src="https://i.imgur.com/RwddNUW.png" alt="Imgur"></li>
+<li>Create Service Blue and Green, first generate template.</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl create service clusterip webserver-svcs --tcp=80 --dry-run -o yaml
+</div></code></pre>
+<ul>
+<li>and</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl create service clusterip webserver-svcs --tcp=80 --dry-run -o yaml &gt; webserver-svcs.yaml
+</div></code></pre>
+<ul>
+<li>vim it as :</li>
+</ul>
+<pre><code class="language-bash"><div>$ cat webserver-svcs.yaml
+</div></code></pre>
+<pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-blue-svc</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">webserver-blue-svc</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  ports:</span>
+<span class="hljs-attr">  - port:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    protocol:</span> <span class="hljs-string">TCP</span>
+<span class="hljs-attr">    targetPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">  selector:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-blue</span>
+<span class="hljs-attr">  type:</span> <span class="hljs-string">ClusterIP</span>
+<span class="hljs-meta">---</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-green-svc</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">webserver-green-svc</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  ports:</span>
+<span class="hljs-attr">  - port:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    protocol:</span> <span class="hljs-string">TCP</span>
+<span class="hljs-attr">    targetPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">  selector:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-green</span>
+<span class="hljs-attr">  type:</span> <span class="hljs-string">ClusterIP</span>
+</div></code></pre>
+<ul>
+<li>check services</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl get svc
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    &lt;none&gt;        443/TCP   3d1h
+</div></code></pre>
+<ul>
+<li>create servcie</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl create -f webserver-svcs.yaml
+service/webserver-blue-svc created
+service/webserver-green-svc created
+</div></code></pre>
+<ul>
+<li>get services</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl get svc
+NAME                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+kubernetes            ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP   3d1h
+webserver-blue-svc    ClusterIP   10.106.19.54     &lt;none&gt;        80/TCP    23s
+webserver-green-svc   ClusterIP   10.108.158.191   &lt;none&gt;        80/TCP    23s
+</div></code></pre>
+<ul>
+<li>now create 2 pods, one for blue and another for green.</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl run blue-app --image=nginx --restart=Never --labels=app=webserver-blue --dry-run -o yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    app: webserver-blue
+  name: blue-app
+spec:
+  containers:
+  - image: nginx
+    name: blue-app
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+</div></code></pre>
+<ul>
+<li>write to file</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl run blue-app --image=nginx --restart=Never --labels=app=webserver-blue --dry-run -o yaml &gt; webserver-blue-gren.yaml
+</div></code></pre>
+<ul>
+<li>vim it as:</li>
+</ul>
+<pre><code class="language-yaml"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-blue</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">blue-app</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">blue-app</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    command:</span> <span class="hljs-string">["/bin/sh","-c",</span> <span class="hljs-string">"echo I am Blue application &gt; /usr/share/nginx/html/index.html; sleep 3600"</span> <span class="hljs-string">]</span>
+<span class="hljs-attr">  dnsPolicy:</span> <span class="hljs-string">ClusterFirst</span>
+<span class="hljs-attr">  restartPolicy:</span> <span class="hljs-string">Never</span>
+<span class="hljs-meta">---</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-green</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">green-app</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">green-app</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    command:</span> <span class="hljs-string">["/bin/sh","-c",</span> <span class="hljs-string">"echo I am Green application &gt; /usr/share/nginx/html/index.html; sleep 3600"</span> <span class="hljs-string">]</span>
+<span class="hljs-attr">  dnsPolicy:</span> <span class="hljs-string">ClusterFirst</span>
+<span class="hljs-attr">  restartPolicy:</span> <span class="hljs-string">Never</span>
+
+</div></code></pre>
+<ul>
+<li>check current pods</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl get pods
+No resources found <span class="hljs-keyword">in</span> default namespace.
+</div></code></pre>
+<ul>
+<li>create it.</li>
+</ul>
+<pre><code><code><div>$ kubectl create -f webserver-blue-gren.yaml
+pod/blue-app created
+pod/green-app created
+</div></code></code></pre>
+<p><img src="https://i.imgur.com/A5vaRtA.png" alt="Imgur"></p>
+<ul>
+<li>502 Bad Gateway Because,in fact , there is no nginx is running.</li>
+<li>There is a problem in our webserver-blue-gren.yaml. Here is the problem.</li>
+</ul>
+<pre><code class="language-bash"><div><span class="hljs-built_in">command</span>: [ <span class="hljs-string">"/bin/sh"</span>, <span class="hljs-string">"-c"</span>, <span class="hljs-string">"echo I am Blue application &gt; /usr/share/nginx/html/index.html ; sleep 3600"</span> ]
+</div></code></pre>
+<ul>
+<li>the Nginx command is overridden by ours, so that we have to run the Nginx as well.</li>
+<li>the fixed:</li>
+</ul>
+<pre><code class="language-bash"><div><span class="hljs-built_in">command</span>: [ <span class="hljs-string">"/bin/sh"</span>, <span class="hljs-string">"-c"</span>, <span class="hljs-string">"echo I am Blue application &gt; /usr/share/nginx/html/index.html &amp;&amp; exec nginx -g 'daemon off;'"</span> ]
+</div></code></pre>
+<ul>
+<li>now they are all becomes.</li>
+</ul>
+<pre><code class="language-YAML"><div><span class="hljs-string">$</span> <span class="hljs-string">cat</span> <span class="hljs-string">webserver-blue-gren.yaml</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-blue</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">blue-app</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">blue-app</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    command:</span> <span class="hljs-string">[</span> <span class="hljs-string">"/bin/sh"</span><span class="hljs-string">,</span> <span class="hljs-string">"-c"</span><span class="hljs-string">,</span> <span class="hljs-string">"echo I am Blue application &gt; /usr/share/nginx/html/index.html &amp;&amp; exec nginx -g 'daemon off;'"</span> <span class="hljs-string">]</span>
+<span class="hljs-attr">  dnsPolicy:</span> <span class="hljs-string">ClusterFirst</span>
+<span class="hljs-attr">  restartPolicy:</span> <span class="hljs-string">Never</span>
+<span class="hljs-meta">---</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  creationTimestamp:</span> <span class="hljs-literal">null</span>
+<span class="hljs-attr">  labels:</span>
+<span class="hljs-attr">    app:</span> <span class="hljs-string">webserver-green</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">green-app</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  containers:</span>
+<span class="hljs-attr">  - image:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">    name:</span> <span class="hljs-string">green-app</span>
+<span class="hljs-attr">    ports:</span>
+<span class="hljs-attr">    - containerPort:</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">    command:</span> <span class="hljs-string">[</span> <span class="hljs-string">"/bin/sh"</span><span class="hljs-string">,</span> <span class="hljs-string">"-c"</span><span class="hljs-string">,</span> <span class="hljs-string">"echo I am Green application &gt; /usr/share/nginx/html/index.html &amp;&amp; exec nginx -g 'daemon off;'"</span> <span class="hljs-string">]</span>
+<span class="hljs-attr">  dnsPolicy:</span> <span class="hljs-string">ClusterFirst</span>
+<span class="hljs-attr">  restartPolicy:</span> <span class="hljs-string">Never</span>
+</div></code></pre>
+<ul>
+<li>create it</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl create -f webserver-blue-gren.yaml
+pod/blue-app created
+pod/green-app created
+</div></code></pre>
+<ul>
+<li>access it</li>
+</ul>
+<p><img src="https://i.imgur.com/4dCcSje.png" alt="Imgur"></p>
+<ul>
+<li>[blue|green].example.cip.com  are another ingress mapping similar to vritual-host-ingress except hostname.</li>
+<li>show resources</li>
+</ul>
+<pre><code class="language-bash"><div>$ kubectl get deploy,pod,svc,ep,ing
+NAME            READY   STATUS    RESTARTS   AGE
+pod/ap-config   1/1     Running   0          39m
+pod/blue-app    1/1     Running   0          4m29s
+pod/green-app   1/1     Running   0          4m29s
+
+NAME                              TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes                ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP        3d6h
+service/webserver-blue-svc        NodePort    10.101.100.198   &lt;none&gt;        80:32427/TCP   10m
+service/webserver-blue-svc-cip    ClusterIP   10.107.220.105   &lt;none&gt;        80/TCP         102m
+service/webserver-cfg-svc         NodePort    10.99.255.250    &lt;none&gt;        80:31250/TCP   37m
+service/webserver-green-svc       NodePort    10.102.3.40      &lt;none&gt;        80:32678/TCP   10m
+service/webserver-green-svc-cip   ClusterIP   10.109.43.243    &lt;none&gt;        80/TCP         102m
+
+NAME                                ENDPOINTS             AGE
+endpoints/kubernetes                192.168.99.101:8443   3d6h
+endpoints/webserver-blue-svc        172.17.0.2:80         10m
+endpoints/webserver-blue-svc-cip    172.17.0.2:80         102m
+endpoints/webserver-cfg-svc         172.17.0.4:80         37m
+endpoints/webserver-green-svc       172.17.0.3:80         10m
+endpoints/webserver-green-svc-cip   172.17.0.3:80         102m
+
+NAME                                          HOSTS                                        ADDRESS          PORTS   AGE
+ingress.extensions/virutal-host-ingress       blue.example.com,green.example.com           192.168.99.101   80      3h53m
+ingress.extensions/virutal-host-ingress-cip   blue.example.cip.com,green.example.cip.com   192.168.99.101   80      97m
+</div></code></pre>
+<ul>
+<li>Noted! Both NodePort and ClusterIP Service Type are applicable for Ingress to route to.</li>
+</ul>
+
+    
+    </div>
+</body>
+<footer>
+    <div class="nav-home--footer">
+        <a class="btn-primary" href="../index.html">Home</a>
+    </div>
+</footer>
+
+
+</html>
