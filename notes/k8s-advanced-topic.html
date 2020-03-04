@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-62655793-4');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+  <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+  <title>Kubernetes Advanced Topics</title>
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+  <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+  <div class="nav-home">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+  <div class="vscode-light note-container">
+
+    <h1 id="advance-topics">Advance Topics</h1>
+    <h2 id="annotation">Annotation.</h2>
+    <ul>
+      <li>With <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/">Annotations</a>,
+        we can attach arbitrary non-identifying metadata to any objects, in a key-value formalt:</li>
+    </ul>
+    <pre><code class="language-JSON"><div><span class="hljs-string">"metadata"</span>: {
+        <span class="hljs-attr">"annotations"</span>: {
+          <span class="hljs-attr">"key1"</span> : <span class="hljs-string">"value1"</span>,
+          <span class="hljs-attr">"key2"</span> : <span class="hljs-string">"value2"</span>
+        }
+      }
+      </div></code></pre>
+    <ul>
+      <li>Unlike Labels, annotations are not used to identify and select objects</li>
+      <li>Annotations can be sued to:
+        <ul>
+          <li>Store build/release IDs, PR numbers, git branch ,etc.</li>
+          <li>Phone/pager numbers of people responsible, or directory entries specifying where such information can be
+            found.</li>
+          <li>Pointers to logging, monitoring, analytics, audit repositories, debugging tools etc.</li>
+          <li>Etc.</li>
+        </ul>
+      </li>
+      <li>For example, while creating a Deployment, we can add a description as seen below:</li>
+    </ul>
+    <pre><code class="language-YAML"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">extensions/v1beta1</span>
+      <span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>
+      <span class="hljs-attr">metadata:</span>
+      <span class="hljs-attr">  name:</span> <span class="hljs-string">webserver</span>
+      <span class="hljs-attr">  annotations:</span> 
+      <span class="hljs-attr">    description:</span> <span class="hljs-string">Deployment</span> <span class="hljs-string">based</span> <span class="hljs-string">PoC</span> <span class="hljs-string">dates</span> <span class="hljs-number">2</span><span class="hljs-string">nd</span> <span class="hljs-string">May'</span> <span class="hljs-number">2019</span>
+      </div></code></pre>
+    <ul>
+      <li>Annotations are displayed while describing an object:</li>
+    </ul>
+    <pre><code class="language-bash"><div>$ kubectl describe deployment webserver
+      Name:                webserver
+      Namespace:           default
+      CreationTimestamp:   Fri, 03 May 2019 05:10:38 +0530
+      Labels:              app=webserver
+      Annotations:         deployment.kubernetes.io/revision=1
+                           description=Deployment based PoC dates 2nd May<span class="hljs-string">'2019
+      </span></div></code></pre>
+    <h2 id="jobs-and-cronjobs">Jobs and CronJobs</h2>
+    <ul>
+      <li>A <a href="https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/">Job</a> creates
+        one or more Pods to perform a given task.</li>
+      <li>The Job object takes the responsibility of Pod failures.</li>
+      <li>It makes sure that the given task is completed successfully.</li>
+      <li>Once the task is complete, all the Pods have terminated automatically.</li>
+      <li>Job configuration options includes:
+        <ul>
+          <li><strong>parallelism</strong>: - to set the number of pods allowed to run in parallel.</li>
+          <li><strong>completions</strong> - to set the number of expected completions.</li>
+          <li><strong>activeDeadlineSeconds</strong> - to set the duration of the Job.</li>
+          <li><strong>backoffLimit</strong> - to set the number of retries before Job is marked as failed.</li>
+          <li><strong>ttlSecondsAfterFinished</strong> - to delay the clean up of the finished Jobs.</li>
+        </ul>
+      </li>
+      <li>Starting with the k8s 1.4 release, we can perform Jobs at scheduled times/dates with <a
+          href="https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/">CronJobs</a>, where a new Job
+        object is create about once per each execution cycle.</li>
+      <li>The CronJob configuration options includes:
+        <ul>
+          <li><strong>startingDeadlineSeconds</strong> - to set the deadline to start a Job if scheduled time was
+            missed.</li>
+          <li><strong>concurrencyPolicy</strong> - to allow or forbid concurrent Jobs or the replace old Job with new
+            ones.</li>
+        </ul>
+      </li>
+    </ul>
+    <h2 id="quota-management">Quota Management.</h2>
+    <ul>
+      <li>Administrators can use the <a
+          href="https://kubernetes.io/docs/concepts/policy/resource-quotas/">ResourceQuota</a> API resource, which
+        provides constrains that limit aggregate resource consumption per Namespace.
+        <ul>
+          <li><strong>Compute Resource Quota</strong>.: We can limit the total sum of compute resources
+            (CPU,memory,etc.) that can be requested in a given Namespace.</li>
+          <li><strong>Storage Resource Quota</strong>: We can limit the total sum of storage resources
+            (PersistentVolumeClaims, request.storage,etc) that can be requested.</li>
+          <li><strong>Object Count Quota</strong>: We can restrict the number of objects of a given type (pods,
+            ConfigMaps,PersistentVolumeClaims,ReplicationControllers,Services,Secrets,etc.).</li>
+        </ul>
+      </li>
+    </ul>
+    <h2 id="autoscaling">AutoScaling.</h2>
+    <ul>
+      <li>We need a dynamic scaling solution which adds or removes objects from the cluster based on resource
+        utilization, availability, and requirement.</li>
+      <li>Autoscaling can be implemented in a K8s cluster via controllers which periodically adjust the number of
+        running objects based on single, multiple, or custom metrics.</li>
+      <li>There are various types of autoscalers available in K8s which can be implemented individually or combined for
+        a more robus autoscaling solution:
+        <ul>
+          <li><a
+              href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details">Horizontal
+              Pod Autoscaler (HPA)</a>:HPA is an algorithm based controller API resource which automatically adjusts the
+            number of replicas in a ReplicaSet, Deployment or Replication Controller based on CPU utilization.</li>
+          <li><a
+              href="https://github.com/kubernetes/community/blob/master/contributors/design-proposals/autoscaling/vertical-pod-autoscaler.md">Vertical
+              Pod Autoscaler (VPA)</a>: VPA automatically sets Container resource requirement (CPU and memory) in a Pod
+            and dynamically adjust them in runtime, based on historical utilization data, current resource availability
+            and real-time events.</li>
+          <li><a href="https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler">Cluster Autoscaler</a>:
+            Cluster Autoscaler automatically re-sizes the k8s cluster when there are insufficient resources available
+            for new Pods expecting to be scheduled or when there are underutilized nodes in the cluster.</li>
+        </ul>
+      </li>
+    </ul>
+    <h2 id="daemonsets">DaemonSets</h2>
+    <ul>
+      <li>In case when we need to collect monitoring data from all nodes, or the run a storage daemon on all nodes, then
+        we need a specific type of Pod running on all nodes at all times.</li>
+      <li>A <a href="https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/">DaemonSet</a> is the object
+        that allows us to do just that.</li>
+      <li>It is a critical controller API resource for multi-node K8s clusters.</li>
+      <li>The <strong>kube-proxy</strong> agent running as a Pod on every single node in the cluster is managed by
+        <strong>DaemonSet</strong></li>
+      <li>Whenever a node is added to the cluster, a Pod from a given DaemonSet is automatically created on it.</li>
+      <li>Although it ensures an automated process, the DaemonSet's Pods are placed on nodes by the cluster's default
+        Scheduler.</li>
+      <li>When the node dies or it is removed from the cluster, the respective Pods are garbage collected.</li>
+      <li>If a DaemonSet is deleted, all Pods it created are deleted as well.</li>
+      <li>A newer feature of the DaemonSet resource allows for its Pods to be scheduled only on specific nodes by
+        configuring <strong>nodeSelectors</strong> and node <strong>affinity</strong> rules. Similar to Deployment
+        resources, DaemonSets support rolling updates and rollbacks.</li>
+    </ul>
+    <h2 id="statefulsets">StatefulSets</h2>
+    <ul>
+      <li>The <a href="https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/">StatefulSets</a>
+        controller is used for stateful applications which require a unique identity, such as name, network
+        identifications, strict ordering, etc. For example, MySQL cluster, etcd cluster.</li>
+      <li>The StatefulSet controller provides identity and guaranteed ordering of deployment and scaling to Pods.</li>
+      <li>Similar to Deployment, StatefulSets use ReplicaSets as intermediary Pod controllers and support rolling
+        updates and rollbacks.</li>
+    </ul>
+    <h2 id="kubernetes-federation">Kubernetes Federation.</h2>
+    <ul>
+      <li>with <a href="https://kubernetes.io/docs/concepts/cluster-administration/federation/">Kubernetes Cluster
+          Federation</a> we can manage multiple Kubernetes clusters from a single control plane.</li>
+      <li>We can sync resoruces across the federated clusters and have cross-cluster discovery.</li>
+      <li>This allows us to perform Deployments across regions, access them using a global DNS record, and achieve High
+        Availability.</li>
+      <li>Although still an Alpha feature, the Federation is very useful when we want to build a hybrid solution, in
+        which we can have one cluster running inside our private datacenter and another one in the public cloud,
+        allowing us to avoid provider lock-in.</li>
+      <li>We can also assign weights for each cluster in the Federation, to distribute the load based on custom rules.
+      </li>
+    </ul>
+    <h2 id="custom-resources">Custom Resources</h2>
+    <ul>
+      <li>In K8s, a <strong>resource</strong> is an API endpoint which stores a collection of API objects. For example,
+        a Pod resource contains all the Pod objects.</li>
+      <li>Although in most cases existing k8s resources are sufficient to fulfill our requirements, we can also cerate
+        new resources using <strong>custom resources</strong>. With custom resources, we don't have to modify the K8s
+        source.</li>
+      <li>Custom resources are dynamic in nature, and they can appear and disappear in an already running cluster at any
+        time.</li>
+      <li>To make a resource declarative, we must create and install a <strong>custom controller</strong>, which can
+        interpret the resource structure and perform required actions.</li>
+      <li>Custom controllers can be deployed and managed in any already running cluster.</li>
+      <li>There are two ways to add custom resources:
+        <ul>
+          <li><a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/">Custom
+              Resource Definitions (CRDs)</a> This is the easiest way to add custom resource and it does not require any
+            programming knowledge. However, building the custom resource controller would require some programming.</li>
+          <li><a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/apiserver-aggregation/">API
+              Aggregation</a>: For more fine-grained control, we can write API Aggregators.</li>
+          <li>They are subordinate API servers sit behind the primary API server. The primary API server acts as a proxy
+            for all incoming API request - it handles the ones based on its capabilities and proxies over the other
+            request meant for the subordinate API servers.</li>
+        </ul>
+      </li>
+    </ul>
+    <h2 id="helm">Helm.</h2>
+    <ul>
+      <li>To deploy an application, we use different Kubernetes manifests, such as Deployments, Services, Volume Claims,
+        Ingress, etc. Sometime, it can be tiresome to deploy them one by one.</li>
+      <li>We can bundle all those manifests after templatizing them into a well-defined format, along with other
+        metadata. Such a bundle is referred to as Chart.</li>
+      <li>These Charts can them be served via repositories, such as those that we have for <strong>rpm</strong> and
+        <strong>deb</strong> packages.</li>
+      <li>[Helm] is a package manager (analogous to yum and apt for Linux) for Kubernetes, which can
+        install/udpate/delete those Charts in the Kubernetes cluster.</li>
+      <li>Helm has two components:
+        <ul>
+          <li>A client called <strong>helm</strong>, which runs on your user's workstation.</li>
+          <li>A server called <strong>tiller</strong>, which runs inside your Kubernetes cluster.</li>
+          <li>The client <strong>helm</strong> connects to the server <strong>tiller</strong> to manage Charts. Charts
+            submitted for k8s are available <a href="https://github.com/helm/charts">here</a></li>
+        </ul>
+      </li>
+    </ul>
+    <h2 id="security-contexts-and-pod-security-policies">Security Contexts and Pod Security Policies.</h2>
+    <ul>
+      <li>At times we need to define specific privileges and access control settings for Pods and Containers.</li>
+      <li><a href="https://kubernetes.io/docs/tasks/configure-pod-container/security-context/">Security Contexts</a>
+        allow us to set Discretionary Access Control for object access permissions, privileged running, capabilities,
+        security labels, etc.</li>
+      <li>However, their effect is limited to the individual Pods and Containers when such context configuration setting
+        are incorporated in the <strong>spec</strong> section.</li>
+      <li>In order to apply security setting to multiple Pods and Containers cluster-wide, we can define <a
+          href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">Pod Security Policies</a>. They allow
+        more fine-grained security settings to control the usage of the host namespace, host networking and ports, file
+        system groups, usage of volume types, enforce Container user and group ID, root privilege escalation, etc.</li>
+    </ul>
+    <h2 id="network-policies">Network Policies.</h2>
+    <ul>
+      <li>K8s was designed to allow all Pods to communicate freely, without restrictions, with all other Pods in cluster
+        Namespace.</li>
+      <li>In time it became clear that it was not an ideal design, and mechanisms needed to be put in place in order to
+        restrict communication between certain Pods and applications in the cluster Namespace.</li>
+      <li><a href="https://kubernetes.io/docs/concepts/services-networking/network-policies/">Network Policies</a> are
+        sets of rules which define how Pods are allowed to talk to each other Pods and resources inside and outside the
+        cluster.</li>
+      <li>Pods not covered by any <strong>Network Policy</strong> will continue to receive unrestricted traffic from any
+        endpoint.</li>
+      <li><strong>Network Policies</strong> are very similar to typical Firewalls. They are designed to protect mostly
+        assets located inside the Firewall but can restrict outgoing traffic as well based on set of rules and policies.
+      </li>
+      <li>The Network Policy API resource specifies <strong>podSelectors</strong>, <em>Ingress</em> and/or
+        <em>Egress</em> <strong>policyTypes</strong>, and rules based on source and destination
+        <strong>ipBlocks</strong> and <strong>ports</strong>.</li>
+      <li>Very simplistic default allow or default deny policies can be defined as well.</li>
+      <li><strong>As a good practice</strong>, it is recommended to define a default deny policy to block all traffic to
+        and from the Namespace, and then define sets of rules for specific traffic to be allowed in and out of the
+        Namespace.</li>
+      <li>Let's keep in mind that not all the networking solutions available for K8s support Network Policies. By
+        default, Network Policies are namespace API resources, but certain network plugins provide additional features
+        so that Network Policies can be applied cluster-wide.</li>
+    </ul>
+    <h2 id="monitoring-and-logging">Monitoring and Logging.</h2>
+    <ul>
+      <li>In k8s, we have to collect resource usage data by Pods, Services, nodes, etc, to understand the overall
+        resource consumption and to make decisions for scaling a given application.</li>
+      <li>Two popular K8s monitoring solutions are the <strong>Kubernetes Metrics Server</strong> and
+        <strong>Prometheus</strong>.
+        <ul>
+          <li><a
+              href="https://kubernetes.io/docs/tasks/debug-application-cluster/resource-metrics-pipeline/#metrics-server">Metrics
+              Server</a>: is a cluster-wide aggregator of resource usage data - a relatively new feature in K8s</li>
+          <li><a href="https://prometheus.io/">Prometheus</a>, now part of <a href="https://www.cncf.io/">CNCF</a>(Cloud
+            Native Computing Foundation), can also be used to scrape the resource usage from different Kubernetes
+            components and objects. Using its client libraries, we can also instrument the code of our application.</li>
+        </ul>
+      </li>
+      <li>Another important aspect for troubleshooting and debugging is Logging, in which we collect the logs from
+        different components of a given system.</li>
+      <li>In k8s, we can collect logs from different cluster components, objects, nodes, etc. Unfortunately, however,
+        K8s doesn't provide cluster-wide logging by default, therefore third party tools are required to centralize and
+        aggregate cluster logs. The most common way to collect the logs is using <a
+          href="https://kubernetes.io/docs/tasks/debug-application-cluster/logging-elasticsearch-kibana/">Elasticsearch</a>,
+        which uses <a href="http://www.fluentd.org/">fluentd</a> with custom configuration as an agent on the nodes.
+        <strong>fluentd</strong> is an open source data collector, which is also part of CNCF.</li>
+    </ul>
+
+
+  </div>
+</body>
+<footer>
+  <div class="nav-home--footer">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+</footer>
+
+
+</html>
