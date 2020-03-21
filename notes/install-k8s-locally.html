@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-62655793-4');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+  <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+  <title>Install Kubernetes locally</title>
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+  <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+  <div class="nav-home">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+  <div class="vscode-light note-container">
+
+    <h1 id="install-kubernetes-locally">Install Kubernetes locally.</h1>
+    <p>The purpose of this blog is the gain more knowledge on Kubernetes cluster in a production graded environment. The
+      complexity lays between installing Minikube and installing multi-master nodes for high-availability. It is a sweet
+      spot to get a closer experience on how Kubernetes works, despite clicking &quot;Create Cluster&quot; on GKE.</p>
+    <h2 id="project-overview">Project overview.</h2>
+    <ul>
+      <li>check tools</li>
+    </ul>
+    <pre><code class="language-bash"><div>$ vagrant -v
+    Vagrant 2.2.7
+    </div></code></pre>
+    <pre><code class="language-bash"><div>$ vboxmanage -v
+    6.1.4r136177
+    </div></code></pre>
+    <h2 id="vagrant-file">Vagrant file</h2>
+    <pre><code class="language-ruby"><div><span class="hljs-comment"># -*- mode: ruby -*-</span>
+    <span class="hljs-comment"># vi: set ft=ruby :</span>
+    
+    
+    $udpatePackages = <span class="hljs-string">&lt;&lt;-SCRIPT
+    # yum update * -y 
+    echo "pretended to be update ( for timesaving sake)" 
+    SCRIPT</span>
+    
+    Vagrant.configure(<span class="hljs-string">"2"</span>) <span class="hljs-keyword">do</span> <span class="hljs-params">|config|</span>
+    
+      config.vm.define <span class="hljs-string">"master"</span> <span class="hljs-keyword">do</span> <span class="hljs-params">|master|</span>
+      master.vm.box = <span class="hljs-string">"centos/7"</span>
+      master.vm.box_version = <span class="hljs-string">"1905.1"</span>
+      master.vm.hostname = <span class="hljs-string">"master"</span>
+      master.vm.provision <span class="hljs-symbol">:shell</span>, <span class="hljs-symbol">inline:</span> <span class="hljs-string">"sed 's/127\.0\.0\.1.*master.*/172\.42\.42\.99 master/' -i /etc/hosts"</span>
+      master.vm.network <span class="hljs-string">"private_network"</span>, <span class="hljs-symbol">ip:</span> <span class="hljs-string">"172.42.42.99"</span>
+      <span class="hljs-keyword">end</span>
+      
+      (<span class="hljs-number">1</span>..<span class="hljs-number">3</span>).each <span class="hljs-keyword">do</span> <span class="hljs-params">|i|</span>
+        config.vm.define <span class="hljs-string">"node<span class="hljs-subst">#{i}</span>"</span> <span class="hljs-keyword">do</span> <span class="hljs-params">|node|</span>
+        node.vm.box = <span class="hljs-string">"centos/7"</span>
+        node.vm.box_version = <span class="hljs-string">"1905.1"</span>
+        node.vm.hostname = <span class="hljs-string">"node<span class="hljs-subst">#{i}</span>"</span>
+        node.vm.provision <span class="hljs-symbol">:shell</span>, <span class="hljs-symbol">inline:</span> <span class="hljs-string">"sed 's/127\.0\.0\.1.*node<span class="hljs-subst">#{i}</span>.*/172\.42\.42\.<span class="hljs-subst">#{i}</span>0 node<span class="hljs-subst">#{i}</span>/' -i /etc/hosts"</span>
+        node.vm.network <span class="hljs-string">"private_network"</span>, <span class="hljs-symbol">ip:</span> <span class="hljs-string">"172.42.42.<span class="hljs-subst">#{i}</span>0"</span>
+        <span class="hljs-keyword">end</span>
+      <span class="hljs-keyword">end</span>
+       
+      config.vm.provider <span class="hljs-string">"virtualbox"</span> <span class="hljs-keyword">do</span> <span class="hljs-params">|vb|</span>
+      vb.memory = <span class="hljs-string">"2048"</span>
+      vb.cpus = <span class="hljs-number">2</span>
+      <span class="hljs-keyword">end</span>
+      
+      config.vm.provision <span class="hljs-string">"shell"</span>, <span class="hljs-symbol">inline:</span> $udpatePackages
+        
+    <span class="hljs-keyword">end</span>
+    
+    
+    </div></code></pre>
+    <ul>
+      <li>run 4 vms.</li>
+    </ul>
+    <pre><code class="language-bash"><div>vagrant up
+    </div></code></pre>
+    <ul>
+      <li>It takes times. During the provision, vms states will looks similar to</li>
+    </ul>
+    <pre><code class="language-bash"><div>$ vagrant status
+    Current machine states:
+    
+    master                    running (virtualbox)
+    node1                     not created (virtualbox)
+    node2                     not created (virtualbox)
+    node3                     not created (virtualbox)
+    </div></code></pre>
+    <ul>
+      <li>When it finished provisioning all four vms.</li>
+    </ul>
+    <pre><code class="language-bash"><div>$ vagrant status
+    Current machine states:
+    
+    master                    running (virtualbox)
+    node-1                    running (virtualbox)
+    node-2                    running (virtualbox)
+    node-3                    running (virtualbox)
+    </div></code></pre>
+    <ul>
+      <li>ensure that hostname -i returns a routable IP address. (You don't have to do this. It is taken care by shell
+        provision in the Vagrant file)</li>
+    </ul>
+    <pre><code class="language-bash"><div>$ vagrant ssh master
+    [vagrant@master ~]$
+    
+    <span class="hljs-comment"># this will create a problem when pods are accessed via their service IP.</span>
+    [vagrant@master ~]$ hostname -i
+    127.0.0.1
+    
+    <span class="hljs-comment"># Change from</span>
+    [vagrant@master ~]$ cat /etc/hosts
+    127.0.0.1       master  master
+    127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+    ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+    
+    <span class="hljs-comment"># to</span>
+    [root@master vagrant]<span class="hljs-comment"># cat /etc/hosts</span>
+    172.42.42.99    master  master
+    127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+    ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+    
+    <span class="hljs-comment"># expected output.</span>
+    [vagrant@master ~]$ hostname -i
+    172.42.42.99
+    </div></code></pre>
+    <ul>
+      <li>Expected output as (It is nice to verify all nodes)</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@node1 ~]$ hostname -i
+    172.42.42.10
+    
+    [vagrant@node2 ~]$ hostname -i
+    172.42.42.20
+    
+    [vagrant@node3 ~]$ hostname -i
+    172.42.42.30
+    </div></code></pre>
+    <h2 id="install-container-runtime-to-all-nodes-including-the-master-node">Install Container runtime to all nodes
+      <em>including</em> the <strong>master</strong> node.</h2>
+    <ul>
+      <li>access node-1</li>
+    </ul>
+    <pre><code class="language-bash"><div>$ vagrant ssh node-1
+    [vagrant@node1 ~]$
+    </div></code></pre>
+    <ul>
+      <li>becomes root</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@node1 ~]$ sudo su
+    [root@node1 vagrant]<span class="hljs-comment">#</span>
+    </div></code></pre>
+    <h3 id="install-container-runtime---docker">Install Container Runtime - Docker</h3>
+    <ul>
+      <li>Install required packages</li>
+    </ul>
+    <pre><code class="language-bash"><div>yum install -y yum-utils device-mapper-persistent-data lvm2
+    </div></code></pre>
+    <ul>
+      <li>Add Docker repository</li>
+    </ul>
+    <pre><code class="language-bash"><div>yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    </div></code></pre>
+    <ul>
+      <li>Install Docker CE.</li>
+    </ul>
+    <pre><code class="language-bash"><div>yum update -y &amp;&amp; yum install -y \
+      containerd.io \
+      docker-ce \
+      docker-ce-cli
+    </div></code></pre>
+    <ul>
+      <li>Create /etc/docker directory.</li>
+    </ul>
+    <pre><code class="language-bash"><div>mkdir /etc/docker
+    </div></code></pre>
+    <ul>
+      <li>Setup daemon.</li>
+    </ul>
+    <pre><code class="language-bash"><div>cat &gt; /etc/docker/daemon.json &lt;&lt;EOF
+    {
+      <span class="hljs-string">"exec-opts"</span>: [<span class="hljs-string">"native.cgroupdriver=systemd"</span>],
+      <span class="hljs-string">"log-driver"</span>: <span class="hljs-string">"json-file"</span>,
+      <span class="hljs-string">"log-opts"</span>: {
+        <span class="hljs-string">"max-size"</span>: <span class="hljs-string">"100m"</span>
+      },
+      <span class="hljs-string">"storage-driver"</span>: <span class="hljs-string">"overlay2"</span>,
+      <span class="hljs-string">"storage-opts"</span>: [
+        <span class="hljs-string">"overlay2.override_kernel_check=true"</span>
+      ]
+    }
+    EOF
+    </div></code></pre>
+    <ul>
+      <li>check daemon.json</li>
+    </ul>
+    <pre><code class="language-json"><div>[root@node1 vagrant]# cat /etc/docker/daemon.json
+    {
+      <span class="hljs-attr">"exec-opts"</span>: [<span class="hljs-string">"native.cgroupdriver=systemd"</span>],
+      <span class="hljs-attr">"log-driver"</span>: <span class="hljs-string">"json-file"</span>,
+      <span class="hljs-attr">"log-opts"</span>: {
+        <span class="hljs-attr">"max-size"</span>: <span class="hljs-string">"100m"</span>
+      },
+      <span class="hljs-attr">"storage-driver"</span>: <span class="hljs-string">"overlay2"</span>,
+      <span class="hljs-attr">"storage-opts"</span>: [
+        <span class="hljs-string">"overlay2.override_kernel_check=true"</span>
+      ]
+    }
+    </div></code></pre>
+    <ul>
+      <li>create docker services</li>
+    </ul>
+    <pre><code class="language-bash"><div>systemctl <span class="hljs-built_in">enable</span> docker
+    systemctl daemon-reload
+    systemctl restart docker
+    </div></code></pre>
+    <ul>
+      <li>Do the same for both node-2 and node-3 vms.</li>
+    </ul>
+    <h2 id="prepare-all-vms-before-installing-kubeadm-master-and-nodes">Prepare all vms before installing kubeadm
+      (master and nodes).</h2>
+    <ul>
+      <li>access master node</li>
+    </ul>
+    <pre><code class="language-bash"><div>$ vagrant ssh master
+    </div></code></pre>
+    <ul>
+      <li>becomes root</li>
+    </ul>
+    <pre><code class="language-bash"><div>sudo su
+    </div></code></pre>
+    <ul>
+      <li>Let a Linux Node’s iptables to correctly see bridged traffic</li>
+    </ul>
+    <pre><code class="language-bash"><div>cat &lt;&lt;EOF &gt; /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    EOF
+    </div></code></pre>
+    <ul>
+      <li>reload it</li>
+    </ul>
+    <pre><code class="language-bash"><div>sysctl --system
+    </div></code></pre>
+    <ul>
+      <li>load br_netfilter</li>
+    </ul>
+    <pre><code class="language-bash"><div>modprobe br_netfilter
+    </div></code></pre>
+    <ul>
+      <li>check br_netfilter loaded</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@master vagrant]<span class="hljs-comment"># lsmod | grep br_netfilter</span>
+    br_netfilter           22256  0
+    bridge                151336  1 br_netfilter
+    </div></code></pre>
+    <ul>
+      <li><a
+          href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#ensure-iptables-tooling-does-not-use-the-nftables-backend">switch</a>
+        nftables to iptables</li>
+    </ul>
+    <pre><code class="language-bash"><div>update-alternatives --<span class="hljs-built_in">set</span> iptables /usr/sbin/iptables-legacy
+    </div></code></pre>
+    <ul>
+      <li>install net-tools</li>
+    </ul>
+    <pre><code class="language-bash"><div>yum install net-tools -y
+    </div></code></pre>
+    <ul>
+      <li>check required pod, output should be empty</li>
+    </ul>
+    <pre><code class="language-bash"><div>netstat -ntlp | grep -e <span class="hljs-string">"6443.|2379|2380|10250|1025[1-2]"</span>
+    </div></code></pre>
+    <ul>
+      <li>check required pod for all node ( node1, node2 and node3) output should be empty as well</li>
+    </ul>
+    <pre><code class="language-bash"><div>netstat -ntlp | grep -e <span class="hljs-string">"10250|3[0-1][0-9][0-9][0-9]|32[0-6][0-9][0-9]|327[0-5][0-9]|3276[0-7]"</span>
+    </div></code></pre>
+    <ul>
+      <li>In Master node, add k8s repo</li>
+    </ul>
+    <pre><code class="language-bash"><div>cat &lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo
+    [kubernetes]
+    name=Kubernetes
+    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    enabled=1
+    gpgcheck=1
+    repo_gpgcheck=1
+    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    EOF
+    </div></code></pre>
+    <ul>
+      <li>Set SELinux in permissive mode (effectively disabling it)</li>
+    </ul>
+    <pre><code class="language-bash"><div>setenforce 0
+    </div></code></pre>
+    <pre><code class="language-bash"><div>sed -i <span class="hljs-string">'s/^SELINUX=enforcing$/SELINUX=permissive/'</span> /etc/selinux/config
+    </div></code></pre>
+    <ul>
+      <li>install k8s packages</li>
+    </ul>
+    <pre><code class="language-bash"><div>yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+    </div></code></pre>
+    <ul>
+      <li>enable kubelet</li>
+    </ul>
+    <pre><code class="language-bash"><div>systemctl <span class="hljs-built_in">enable</span> --now kubelet
+    </div></code></pre>
+    <ul>
+      <li>restart kubelet</li>
+    </ul>
+    <pre><code class="language-bash"><div>systemctl daemon-reload
+    systemctl restart kubelet
+    systemctl <span class="hljs-built_in">enable</span> docker.service
+    </div></code></pre>
+    <h2 id="installing-kubeadm-and-kubelet-on-nodes">Installing kubeadm and kubelet on nodes</h2>
+    <ul>
+      <li>for node-1 to 3 do</li>
+    </ul>
+    <pre><code class="language-bash"><div>cat &lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo
+    [kubernetes]
+    name=Kubernetes
+    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    enabled=1
+    gpgcheck=1
+    repo_gpgcheck=1
+    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    EOF
+    </div></code></pre>
+    <pre><code class="language-bash"><div>setenforce 0
+    </div></code></pre>
+    <pre><code class="language-bash"><div>sed -i <span class="hljs-string">'s/^SELINUX=enforcing$/SELINUX=permissive/'</span> /etc/selinux/config
+    </div></code></pre>
+    <ul>
+      <li>Let a Linux Node’s iptables to correctly see bridged traffic</li>
+    </ul>
+    <pre><code class="language-bash"><div>cat &lt;&lt;EOF &gt; /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    EOF
+    </div></code></pre>
+    <ul>
+      <li>reload it</li>
+    </ul>
+    <pre><code class="language-bash"><div>sysctl --system
+    </div></code></pre>
+    <ul>
+      <li>load br_netfilter</li>
+    </ul>
+    <pre><code class="language-bash"><div>modprobe br_netfilter
+    </div></code></pre>
+    <ul>
+      <li>install required package (noted no kubectl)</li>
+    </ul>
+    <pre><code class="language-bash"><div>yum install -y kubelet kubeadm --disableexcludes=kubernetes
+    </div></code></pre>
+    <pre><code class="language-bash"><div>systemctl <span class="hljs-built_in">enable</span> --now kubelet
+    </div></code></pre>
+    <pre><code class="language-bash"><div>systemctl daemon-reload
+    systemctl restart kubelet
+    </div></code></pre>
+    <h2 id="create-a-single-control-plane-cluster-with-kubeadm">Create a single control-plane cluster with kubeadm</h2>
+    <ul>
+      <li><strong>disable swap</strong> on all <strong>nodes</strong> including <strong>master</strong></li>
+    </ul>
+    <pre><code class="language-bash"><div><span class="hljs-comment"># Check swap</span>
+    [root@node1 vagrant]<span class="hljs-comment"># free -h</span>
+                  total        used        free      shared  buff/cache   available
+    Mem:           1.8G        170M        1.2G        8.5M        437M        1.4G
+    Swap:          2.0G          0B        2.0G
+    
+    <span class="hljs-comment"># turn it off.</span>
+    [root@node1 vagrant]<span class="hljs-comment"># swapoff -a</span>
+    
+    <span class="hljs-comment"># Recheck it you should see it occupied 0B</span>
+    [root@node1 vagrant]<span class="hljs-comment"># free -h</span>
+                  total        used        free      shared  buff/cache   available
+    Mem:           1.8G        196M        1.2G        8.6M        452M        1.4G
+    Swap:            0B          0B          0B
+    
+    </div></code></pre>
+    <ul>
+      <li>permanently disabled swap</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@node1 vagrant]<span class="hljs-comment"># cat /etc/fstab</span>
+    
+    <span class="hljs-comment">#</span>
+    <span class="hljs-comment"># /etc/fstab</span>
+    <span class="hljs-comment"># Created by anaconda on Sat Jun  1 17:13:31 2019</span>
+    <span class="hljs-comment">#</span>
+    <span class="hljs-comment"># Accessible filesystems, by reference, are maintained under '/dev/disk'</span>
+    <span class="hljs-comment"># See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info</span>
+    <span class="hljs-comment">#</span>
+    UUID=8ac075e3-1124-4bb6-bef7-a6811bf8b870 /                       xfs     defaults        0 0
+    /swapfile none swap defaults 0 0
+    </div></code></pre>
+    <ul>
+      <li>comment swap out.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@node1 vagrant]<span class="hljs-comment"># cat /etc/fstab</span>
+    
+    <span class="hljs-comment">#</span>
+    <span class="hljs-comment"># /etc/fstab</span>
+    <span class="hljs-comment"># Created by anaconda on Sat Jun  1 17:13:31 2019</span>
+    <span class="hljs-comment">#</span>
+    <span class="hljs-comment"># Accessible filesystems, by reference, are maintained under '/dev/disk'</span>
+    <span class="hljs-comment"># See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info</span>
+    <span class="hljs-comment">#</span>
+    UUID=8ac075e3-1124-4bb6-bef7-a6811bf8b870 /                       xfs     defaults        0 0
+    <span class="hljs-comment">#/swapfile none swap defaults 0 0</span>
+    </div></code></pre>
+    <ul>
+      <li>delete swap file</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@node1 vagrant]<span class="hljs-comment"># rm /swapfile</span>
+    rm: remove regular file ‘/swapfile’? y
+    </div></code></pre>
+    <ul>
+      <li>pull images</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@master vagrant]<span class="hljs-comment"># kubeadm config images pull</span>
+    </div></code></pre>
+    <h2 id="with-flannel-container-network-interface-cni">With Flannel Container Network Interface (CNI)</h2>
+    <pre><code class="language-bash"><div>[root@master vagrant]<span class="hljs-comment"># kubeadm init --apiserver-advertise-address=172.42.42.99 --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint=172.42.42.99</span>
+    
+    [vagrant@master ~]$ mkdir -p <span class="hljs-variable">$HOME</span>/.kube
+    
+    [vagrant@master ~]$ sudo cp -i /etc/kubernetes/admin.conf <span class="hljs-variable">$HOME</span>/.kube/config
+    
+    [vagrant@master ~]$ sudo chown $(id -u):$(id -g) <span class="hljs-variable">$HOME</span>/.kube/config
+    </div></code></pre>
+    <ul>
+      <li>check pods
+        <ul>
+          <li>noted that coredns is <em>Pending</em> is the expected behaviour. Because it keep waiting CNI
+            implementation.</li>
+        </ul>
+      </li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get pod --all-namespaces
+    NAMESPACE     NAME                             READY   STATUS    RESTARTS   AGE
+    kube-system   coredns-6955765f44-bs5vv         0/1     Pending   0          79s
+    kube-system   coredns-6955765f44-pnz5j         0/1     Pending   0          79s
+    kube-system   etcd-master                      1/1     Running   0          96s
+    kube-system   kube-apiserver-master            1/1     Running   0          96s
+    kube-system   kube-controller-manager-master   1/1     Running   0          95s
+    kube-system   kube-proxy-t6xc6                 1/1     Running   0          78s
+    kube-system   kube-scheduler-master            1/1     Running   0          96s
+    </div></code></pre>
+    <ul>
+      <li>install flannel</li>
+      <li>There is a <a
+          href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/#default-nic-when-using-flannel-as-the-pod-network-in-vagrant">problem</a>
+        when using Flannel as the pod network in Vagrant</li>
+      <li>In fact, we need to apply this <a
+          href="https://raw.githubusercontent.com/coreos/flannel/v0.12.0/Documentation/kube-flannel.yml">https://raw.githubusercontent.com/coreos/flannel/v0.12.0/Documentation/kube-flannel.yml</a>
+      </li>
+      <li>However according to the fix we need to pass <code>--iface=eth1</code> option to Flannel.</li>
+      <li>Here is the fixed --&gt; <a
+          href="https://gist.githubusercontent.com/Charnnarong/5f2304bb82a21b4d66e970c5ede185ec/raw/cb3a7240cc3991b4fdfee3336c743fb3f7cdf478/vagrant-flannel.yaml">https://gist.githubusercontent.com/Charnnarong/5f2304bb82a21b4d66e970c5ede185ec/raw/cb3a7240cc3991b4fdfee3336c743fb3f7cdf478/vagrant-flannel.yaml</a>
+      </li>
+      <li>Apply Flannel
+        <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl apply -f https://gist.githubusercontent.com/Charnnarong/5f2304bb82a21b4d66e970c5ede185ec/raw/6fa2458e39fe2e6e5650b6b8c977aa7e3f08cd18/vagrant-flannel.yaml
+    </div></code></pre>
+      </li>
+      <li>A few minutes later check pods</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get pod --all-namespaces
+    NAMESPACE     NAME                             READY   STATUS    RESTARTS   AGE
+    kube-system   coredns-6955765f44-bs5vv         1/1     Running   0          21m
+    kube-system   coredns-6955765f44-pnz5j         1/1     Running   0          21m
+    kube-system   etcd-master                      1/1     Running   0          21m
+    kube-system   kube-apiserver-master            1/1     Running   0          21m
+    kube-system   kube-controller-manager-master   1/1     Running   0          21m
+    kube-system   kube-flannel-ds-amd64-v9cd7      1/1     Running   0          59s
+    kube-system   kube-proxy-t6xc6                 1/1     Running   0          21m
+    kube-system   kube-scheduler-master            1/1     Running   0          21m
+    </div></code></pre>
+    <ul>
+      <li>describe it</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl -n kube-system describe pods/kube-flannel-ds-amd64-v9cd7
+    </div></code></pre>
+    <ul>
+      <li>Print join node command</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubeadm token create --<span class="hljs-built_in">print</span>-join-command
+    </div></code></pre>
+    <ul>
+      <li>Join node</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@node1 vagrant]<span class="hljs-comment"># kubeadm join 172.42.42.99:6443 --token z8h6fl.9z3steltu2h3g388     --discovery-token-ca-cert-hash sha256:3f439f86613aa762631d80003cca3fbcffe2d9367f9e7327effc588452c7b48 b</span>
+    </div></code></pre>
+    <ul>
+      <li>check node</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get node
+    NAME     STATUS     ROLES    AGE   VERSION
+    master   Ready      master   32m   v1.17.4
+    node1    NotReady   &lt;none&gt;   5s    v1.17.4
+    </div></code></pre>
+    <ul>
+      <li>A few minutes later</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get node
+    NAME     STATUS   ROLES    AGE   VERSION
+    master   Ready    master   33m   v1.17.4
+    node1    Ready    &lt;none&gt;   65s   v1.17.4
+    </div></code></pre>
+    <ul>
+      <li>Check Pods</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get pod --all-namespaces
+    NAMESPACE     NAME                             READY   STATUS             RESTARTS   AGE
+    kube-system   coredns-6955765f44-bs5vv         1/1     Running            0          33m
+    kube-system   coredns-6955765f44-pnz5j         1/1     Running            0          33m
+    kube-system   etcd-master                      1/1     Running            0          34m
+    kube-system   kube-apiserver-master            1/1     Running            0          34m
+    kube-system   kube-controller-manager-master   1/1     Running            0          34m
+    kube-system   kube-flannel-ds-amd64-v9cd7      1/1     Running            0          13m
+    kube-system   kube-flannel-ds-amd64-vsnf9      1/1     Running            0          91s
+    kube-system   kube-proxy-hcv8q                 1/1     Running            0          91s
+    kube-system   kube-proxy-t6xc6                 1/1     Running            0          33m
+    kube-system   kube-scheduler-master            1/1     Running            0          34m
+    </div></code></pre>
+    <p>Ref :</p>
+    <ul>
+      <li><a
+          href="https://github.com/errordeveloper/kubernetes-ansible-vagrant/blob/22dd39dfc06111235620e6c4404a96ae146f26fd/Vagrantfile#L11">https://github.com/errordeveloper/kubernetes-ansible-vagrant/blob/22dd39dfc06111235620e6c4404a96ae146f26fd/Vagrantfile#L11</a>
+      </li>
+      <li><a
+          href="https://blog.laputa.io/kubernetes-flannel-networking-6a1cb1f8ec7c">https://blog.laputa.io/kubernetes-flannel-networking-6a1cb1f8ec7c</a>
+      </li>
+    </ul>
+    <h2 id="reset-k8s-cluster">Reset k8s cluster.</h2>
+    <ul>
+      <li>drain nodes</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl drain node1 --delete-local-data --force --ignore-daemonsets
+    
+    [vagrant@master ~]$ kubectl drain node2 --delete-local-data --force --ignore-daemonsets
+    
+    [vagrant@master ~]$ kubectl drain node3 --delete-local-data --force --ignore-daemonsets
+    
+    [vagrant@master ~]$ kubectl delete node node1 node2 node3
+    </div></code></pre>
+    <ul>
+      <li>reset cluster by kubeadm (all nodes and master)</li>
+    </ul>
+    <pre><code class="language-bash"><div>kubeadm reset
+    </div></code></pre>
+    <pre><code class="language-bash"><div>iptables -F &amp;&amp; iptables -t nat -F &amp;&amp; iptables -t mangle -F &amp;&amp; iptables -X
+    </div></code></pre>
+    <p>We are going to clear the cluster state for later use with Calico CNI.</p>
+    <pre><code class="language-bash"><div>[root@master vagrant]<span class="hljs-comment"># kubeadm reset</span>
+    [root@master vagrant]<span class="hljs-comment"># rm -rf /etc/cni/net.d</span>
+    [root@master vagrant]<span class="hljs-comment"># iptables -F &amp;&amp; iptables -t nat -F &amp;&amp; iptables -t mangle -F &amp;&amp; iptables -X</span>
+    </div></code></pre>
+    <h2 id="with-calico-container-network-interface-cni">With Calico Container Network Interface (CNI)</h2>
+    <ul>
+      <li>init control plane in master node</li>
+      <li>with Calico for Pod network.</li>
+    </ul>
+    <pre><code class="language-bash"><div>
+    kubeadm init --apiserver-advertise-address=172.42.42.99 --pod-network-cidr=192.168.0.0/16 --control-plane-endpoint=172.42.42.99
+    
+    ...
+    Then you can join any number of worker nodes by running the following on each as root:
+    
+    kubeadm join 172.42.42.99:6443 --token ov3mxl.e9z9yao71n83an17 \
+        --discovery-token-ca-cert-hash sha256:5fbd51df93b3d254fdc3992abd2de652a61b4c1749f853c7b7ae4dacae6e0b23
+    </div></code></pre>
+    <ul>
+      <li>copy kubeconfig</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ mkdir -p <span class="hljs-variable">$HOME</span>/.kube
+    [vagrant@master ~]$ sudo cp -i /etc/kubernetes/admin.conf <span class="hljs-variable">$HOME</span>/.kube/config
+    [vagrant@master ~]$ sudo chown $(id -u):$(id -g) <span class="hljs-variable">$HOME</span>/.kube/config
+    </div></code></pre>
+    <ul>
+      <li>check k8s status</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get nodes
+    NAME     STATUS     ROLES    AGE    VERSION
+    master   NotReady   master   4m8s   v1.17.4
+    
+    [vagrant@master ~]$ kubectl get pods --all-namespaces
+    kube-system   calico-kube-controllers-788d6b9876-fpfxv   0/1     ContainerCreating   0          36s
+    kube-system   calico-node-4xv48                          0/1     PodInitializing     0          37s
+    kube-system   coredns-6955765f44-dbrxh                   0/1     Pending             0          8m13s
+    kube-system   coredns-6955765f44-wv2xt                   0/1     Pending             0          8m13s
+    kube-system   etcd-master                                1/1     Running             0          8m28s
+    kube-system   kube-apiserver-master                      1/1     Running             0          8m28s
+    kube-system   kube-controller-manager-master             1/1     Running             0          8m28s
+    kube-system   kube-proxy-r4mdf                           1/1     Running             0          8m13s
+    kube-system   kube-scheduler-master                      1/1     Running             0          8m28s
+    </div></code></pre>
+    <ul>
+      <li>apply calico add-on</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl apply -f https://docs.projectcalico.org/v3.13/manifests/calico.yaml
+    </div></code></pre>
+    <ul>
+      <li>In a few minutes later</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get nodes
+    NAME     STATUS   ROLES    AGE     VERSION
+    master   Ready    master   9m13s   v1.17.4
+    [vagrant@master ~]$ kubectl get pods --all-namespaces
+    NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE
+    kube-system   calico-kube-controllers-788d6b9876-fpfxv   1/1     Running   0          98s
+    kube-system   calico-node-4xv48                          1/1     Running   0          99s
+    kube-system   coredns-6955765f44-dbrxh                   1/1     Running   0          9m15s
+    kube-system   coredns-6955765f44-wv2xt                   1/1     Running   0          9m15s
+    kube-system   etcd-master                                1/1     Running   0          9m30s
+    kube-system   kube-apiserver-master                      1/1     Running   0          9m30s
+    kube-system   kube-controller-manager-master             1/1     Running   0          9m30s
+    kube-system   kube-proxy-r4mdf                           1/1     Running   0          9m15s
+    kube-system   kube-scheduler-master                      1/1     Running   0          9m30s
+    </div></code></pre>
+    <ul>
+      <li>print join node command</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubeadm token create --<span class="hljs-built_in">print</span>-join-command
+    W0321 02:09:09.266806   25256 validation.go:28] Cannot validate kube-proxy config - no validator is available
+    W0321 02:09:09.267153   25256 validation.go:28] Cannot validate kubelet config - no validator is available
+    kubeadm join 172.42.42.99:6443 --token t7gyox.3olrli90wr5vsykc     --discovery-token-ca-cert-hash sha256:769c0a302fa6334518ade9353191bc2905d9db03ff967f579c353d9333c6a58e
+    </div></code></pre>
+    <ul>
+      <li>join node</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@node1 vagrant]<span class="hljs-comment"># kubeadm join 172.42.42.99:6443 --token t7gyox.3olrli90wr5vsykc     --discovery-token-ca-cert-hash sha256:769c0a302fa6334518ade9353191bc2 905d9db03ff967f579c353d9333c6a58e</span>
+    </div></code></pre>
+    <ul>
+      <li>check nodes</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get node
+    NAME     STATUS   ROLES    AGE   VERSION
+    master   Ready    master   11m   v1.17.4
+    node1    Ready    &lt;none&gt;   63s   v1.17.4
+    </div></code></pre>
+    <ul>
+      <li>join node-2 and node-3 as well</li>
+      <li><strong>Noted</strong> each join need new token</li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@node2 vagrant]<span class="hljs-comment"># kubeadm join 172.42.42.99:6443 --token vfg5sv.t7pvcufta8qp2ieh     --discovery-token-ca-cert-hash sha256:5fbd51df93b3d254fdc3992abd2de652a61b4c1749f853c7b7ae4dacae6e0b23</span>
+    </div></code></pre>
+    <pre><code class="language-bash"><div>[root@node3 vagrant]<span class="hljs-comment"># kubeadm join 172.42.42.99:6443 --token 7z7z1i.zo26loeufmfuwysr     --discovery-token-ca-cert-hash sha256:5fbd51df93b3d254fdc3992abd2de652a61b4c1749f853c7b7ae4dacae6e0b23</span>
+    </div></code></pre>
+    <ul>
+      <li>check on master a few minutes later</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get node
+    NAME     STATUS   ROLES    AGE     VERSION
+    master   Ready    master   14m     v1.17.4
+    node1    Ready    &lt;none&gt;   3m28s   v1.17.4
+    node2    Ready    &lt;none&gt;   88s     v1.17.4
+    node3    Ready    &lt;none&gt;   69s     v1.17.4
+    </div></code></pre>
+    <ul>
+      <li>check all pods</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get pod --all-namespaces
+    NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE
+    kube-system   calico-kube-controllers-788d6b9876-fpfxv   1/1     Running   0          8m25s
+    kube-system   calico-node-4xtgd                          1/1     Running   0          4m26s
+    kube-system   calico-node-4xv48                          1/1     Running   0          8m26s
+    kube-system   calico-node-ksj2w                          1/1     Running   0          104s
+    kube-system   coredns-6955765f44-dbrxh                   1/1     Running   0          16m
+    kube-system   coredns-6955765f44-wv2xt                   1/1     Running   0          16m
+    kube-system   etcd-master                                1/1     Running   0          16m
+    kube-system   kube-apiserver-master                      1/1     Running   0          16m
+    kube-system   kube-controller-manager-master             1/1     Running   0          16m
+    kube-system   kube-proxy-2rv9q                           1/1     Running   0          104s
+    kube-system   kube-proxy-r4mdf                           1/1     Running   0          16m
+    kube-system   kube-proxy-x56vn                           1/1     Running   0          4m26s
+    kube-system   kube-scheduler-master                      1/1     Running   0          16m
+    </div></code></pre>
+    <h2 id="test-drive">Test drive</h2>
+    <ul>
+      <li>create simple deployment</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ cat webserver.yaml
+    </div></code></pre>
+    <pre><code class="language-yaml"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span>
+    <span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>
+    <span class="hljs-attr">metadata:</span>
+    <span class="hljs-attr">  labels:</span>
+    <span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+    <span class="hljs-attr">  name:</span> <span class="hljs-string">webserver</span>
+    <span class="hljs-attr">spec:</span>
+    <span class="hljs-attr">  replicas:</span> <span class="hljs-number">3</span>
+    <span class="hljs-attr">  selector:</span>
+    <span class="hljs-attr">    matchLabels:</span>
+    <span class="hljs-attr">      app:</span> <span class="hljs-string">nginx</span>
+    <span class="hljs-attr">  template:</span>
+    <span class="hljs-attr">    metadata:</span>
+    <span class="hljs-attr">      labels:</span>
+    <span class="hljs-attr">        app:</span> <span class="hljs-string">nginx</span>
+    <span class="hljs-attr">    spec:</span>
+    <span class="hljs-attr">      containers:</span>
+    <span class="hljs-attr">      - image:</span> <span class="hljs-attr">nginx:alpine</span>
+    <span class="hljs-attr">        name:</span> <span class="hljs-string">nginx</span>
+    <span class="hljs-attr">        ports:</span>
+    <span class="hljs-attr">        - containerPort:</span> <span class="hljs-number">80</span>
+    </div></code></pre>
+    <ul>
+      <li>deploy it.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl apply -f webserver.yaml
+    deployment.apps/webserver created
+    </div></code></pre>
+    <ul>
+      <li>check it.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get pod -o wide
+    NAME                         READY   STATUS    RESTARTS   AGE   IP                NODE    NOMINATED NODE   READINESS GATES
+    webserver-5c559d5697-9lzhj   1/1     Running   0          38s   192.168.104.1     node2   &lt;none&gt;           &lt;none&gt;
+    webserver-5c559d5697-ljr2l   1/1     Running   0          38s   192.168.166.129   node1   &lt;none&gt;           &lt;none&gt;
+    webserver-5c559d5697-qvj54   1/1     Running   0          38s   192.168.104.2     node2   &lt;none&gt;           &lt;none&gt;
+    </div></code></pre>
+    <ul>
+      <li>curl it</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ curl 192.168.166.129
+    &lt;!DOCTYPE html&gt;...
+    
+    [vagrant@master ~]$ curl 192.168.104.1 
+    &lt;!DOCTYPE html&gt;...
+    
+    </div></code></pre>
+    <ul>
+      <li>create services.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ cat webserver-svc.yaml
+    </div></code></pre>
+    <pre><code class="language-yaml"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+    <span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span>
+    <span class="hljs-attr">metadata:</span>
+    <span class="hljs-attr">  labels:</span>
+    <span class="hljs-attr">    run:</span> <span class="hljs-string">web-service</span>
+    <span class="hljs-attr">  name:</span> <span class="hljs-string">web-service</span>
+    <span class="hljs-attr">spec:</span>
+    <span class="hljs-attr">  ports:</span>
+    <span class="hljs-attr">  - port:</span> <span class="hljs-number">80</span>
+    <span class="hljs-attr">    protocol:</span> <span class="hljs-string">TCP</span>
+    <span class="hljs-attr">  selector:</span>
+    <span class="hljs-attr">    app:</span> <span class="hljs-string">nginx</span>
+    <span class="hljs-attr">  type:</span> <span class="hljs-string">NodePort</span>
+    </div></code></pre>
+    <ul>
+      <li>apply it.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl apply -f webserver-svc.yaml
+    service/web-service created
+    </div></code></pre>
+    <ul>
+      <li>get services</li>
+    </ul>
+    <pre><code class="language-bash"><div>vagrant@master ~]$ kubectl get services
+    NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+    kubernetes    ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP        28m
+    web-service   NodePort    10.100.113.150   &lt;none&gt;        80:30695/TCP   37s
+    </div></code></pre>
+    <p><img src="https://i.imgur.com/PsFFaJL.png" alt="Imgur"></p>
+    <h1 id="dashboard">Dashboard.</h1>
+    <p>From <a href="https://github.com/kubernetes/dashboard">kubernetes dashboard</a></p>
+    <pre><code class="language-bash"><div>kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc6/aio/deploy/recommended.yaml
+    </div></code></pre>
+    <ul>
+      <li>check it</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl -n kubernetes-dashboard get pod
+    NAME                                         READY   STATUS    RESTARTS   AGE
+    dashboard-metrics-scraper-7b8b58dc8b-w4bgd   1/1     Running   0          56s
+    kubernetes-dashboard-5f5f847d57-vtbmn        1/1     Running   0          56s
+    </div></code></pre>
+    <ul>
+      <li>Proxy hack :(</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl proxy --address=0.0.0.0 --accept-hosts=<span class="hljs-string">'172.42.42.99'</span>
+    Starting to serve on [::]:8001
+    </div></code></pre>
+    <ul>
+      <li>you get this.</li>
+    </ul>
+    <p><img src="https://i.imgur.com/FAKSVyz.png" alt="Imgur"></p>
+    <ul>
+      <li>Now create user <a
+          href="https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md">ref</a>
+      </li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ cat admin-user.yaml
+    </div></code></pre>
+    <pre><code class="language-yaml"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+    <span class="hljs-attr">kind:</span> <span class="hljs-string">ServiceAccount</span>
+    <span class="hljs-attr">metadata:</span>
+    <span class="hljs-attr">  name:</span> <span class="hljs-string">admin-user</span>
+    <span class="hljs-attr">  namespace:</span> <span class="hljs-string">kubernetes-dashboard</span>
+    </div></code></pre>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get ServiceAccount --all-namespaces | grep admin-user
+    <span class="hljs-comment"># no result.</span>
+    </div></code></pre>
+    <ul>
+      <li>apply and recheck.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl apply -f admin-user.yaml
+    serviceaccount/admin-user created
+    
+    [vagrant@master ~]$ kubectl get ServiceAccount --all-namespaces | grep admin-user
+    kubernetes-dashboard   admin-user                           1         8s
+    </div></code></pre>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ cat admin-user-role-binding.yaml
+    </div></code></pre>
+    <pre><code class="language-yaml"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">rbac.authorization.k8s.io/v1</span>
+    <span class="hljs-attr">kind:</span> <span class="hljs-string">ClusterRoleBinding</span>
+    <span class="hljs-attr">metadata:</span>
+    <span class="hljs-attr">  name:</span> <span class="hljs-string">admin-user</span>
+    <span class="hljs-attr">roleRef:</span>
+    <span class="hljs-attr">  apiGroup:</span> <span class="hljs-string">rbac.authorization.k8s.io</span>
+    <span class="hljs-attr">  kind:</span> <span class="hljs-string">ClusterRole</span>
+    <span class="hljs-attr">  name:</span> <span class="hljs-string">cluster-admin</span>
+    <span class="hljs-attr">subjects:</span>
+    <span class="hljs-attr">- kind:</span> <span class="hljs-string">ServiceAccount</span>
+    <span class="hljs-attr">  name:</span> <span class="hljs-string">admin-user</span>
+    <span class="hljs-attr">  namespace:</span> <span class="hljs-string">kubernetes-dashboard</span>
+    </div></code></pre>
+    <ul>
+      <li>apply it.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl apply -f admin-user-role-binding.yaml
+    clusterrolebinding.rbac.authorization.k8s.io/admin-user created
+    </div></code></pre>
+    <ul>
+      <li>get token</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk <span class="hljs-string">'{print $1}'</span>)
+    Name:         admin-user-token-v2jt7
+    Namespace:    kubernetes-dashboard
+    Labels:       &lt;none&gt;
+    Annotations:  kubernetes.io/service-account.name: admin-user
+                  kubernetes.io/service-account.uid: 40c43c90-db39-404f-aa04-575308c20b1a
+    
+    Type:  kubernetes.io/service-account-token
+    
+    Data
+    ====
+    ca.crt:     1025 bytes
+    namespace:  20 bytes
+    token:      eyJhbGciOiJSUzI1NiIsImtpZCI6ImZDd0dhQXBSVHkzWVNTOGlTUXhfOGZTYmpZRmNoaWlCUUozUHp5SlJ3N0UifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLXYyanQ3Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiI0MGM0M2M5MC1kYjM5LTQwNGYtYWEwNC01NzUzMDhjMjBiMWEiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6YWRtaW4tdXNlciJ9.A4vFLxvCLWwLoS1iuQImBsKs9BBi7FsTOH-Pi_93qHRi7sJOKJhtxjQTG0_WPFX2V_belhvd9_16rrVN5uwufpzTV3jYP1fYXeVwATwAsprFlWp79-57UbL1My61oGEsOU0ClCCCI7suqY2a2Jk05emoTuIjk7FmK7m4pwJj2vqMAzgvlJrkj1O27oBVXyVM2Jm6x-Yg1wmP_2g3Y0hCXZ0mquqwMb1BNJjFEUf8gkTgtOQZFALP896cT5UkeFf85NiN6de0d2E9ArfB553uMTn6G3TwcIzY058SY9cYERYilKHMYT5R_cDb5tIxOst7o4dk2TVbc5oth_XRu-N3vg
+    </div></code></pre>
+    <ul>
+      <li>use the token</li>
+    </ul>
+    <p><img src="https://i.imgur.com/xIbEPIQ.png" alt="Imgur"></p>
+    <blockquote>
+      <p>NOTE: Dashboard should not be exposed publicly using kubectl proxy command as it only allows HTTP connection.
+        For domains other than localhost and 127.0.0.1 it will not be possible to sign in. <strong>Nothing will
+          happen</strong> after clicking Sign in button on login page.</p>
+    </blockquote>
+    <ul>
+      <li>let's try node port instead <a
+          href="https://github.com/kubernetes/dashboard/blob/v2.0.0-rc6/docs/user/accessing-dashboard/1.7.x-and-above.md#accessing-dashboard-17x-and-above">Accessing
+          Dashboard</a></li>
+    </ul>
+    <pre><code class="language-bash"><div>kubectl -n kubernetes-dashboard edit service kubernetes-dashboard
+    </div></code></pre>
+    <ul>
+      <li>Change <code>type: ClusterIP</code> to type: <code>type: NodePort</code> and save file.</li>
+    </ul>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get pod --show-labels --all-namespaces -o wide | grep dashboard
+    kubernetes-dashboard   dashboard-metrics-scraper-7b8b58dc8b-w4bgd   1/1     Running   0          152m    192.168.104.3     node2    &lt;none&gt;           &lt;none&gt;            k8s-app=dashboard-metrics-scraper,pod-template-hash=7b8b58dc8b
+    kubernetes-dashboard   kubernetes-dashboard-5f5f847d57-vtbmn        1/1     Running   0          152m    192.168.166.130   node1    &lt;none&gt;           &lt;none&gt;            k8s-app=kubernetes-dashboard,pod-template-hash=5f5f847d57
+    </div></code></pre>
+    <pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get service -n kubernetes-dashboard
+    NAME                        TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE
+    dashboard-metrics-scraper   ClusterIP   10.111.186.137   &lt;none&gt;        8000/TCP        157m
+    kubernetes-dashboard        NodePort    10.100.130.210   &lt;none&gt;        443:31432/TCP   157m
+    </div></code></pre>
+    <ul>
+      <li>it live on node1 <em>k8s-app=kubernetes-dashboard,pod-template-hash=5f5f847d57</em></li>
+    </ul>
+    <pre><code class="language-bash"><div>[root@node1 vagrant]<span class="hljs-comment"># ip route | grep eth1</span>
+    172.42.42.0/24 dev eth1 proto kernel scope link src 172.42.42.10 metric 101
+    </div></code></pre>
+    <ul>
+      <li>therefore access dashboard with <a href="https://172.42.42.10:31432">https://172.42.42.10:31432</a></li>
+    </ul>
+    <p><img src="https://i.imgur.com/2uHYvTn.png" alt="Imgur"></p>
+    <ul>
+      <li>use the same token above.</li>
+    </ul>
+    <p><img src="https://i.imgur.com/qOvJhF9.png" alt="Imgur"></p>
+    <hr>
+    <h2 id="creating-highly-available-clusters-with-kubeadm">Creating Highly Available clusters with kubeadm</h2>
+    <p>Simply follow the link below.</p>
+    <ul>
+      <li>Make sure master etcd compile 2n+1 nodes</li>
+    </ul>
+    <p><a href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/">Creating
+        Highly Available clusters with kubeadm</a></p>
+
+
+  </div>
+</body>
+<footer>
+  <div class="nav-home--footer">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+</footer>
+
+
+</html>
