@@ -108,6 +108,26 @@ body {
     text-align: center;
 }
 
+.note-container> h1 > a ,
+.note-container> h2 > a ,
+.note-container> h3 > a ,
+.note-container> h4 > a ,
+.note-container> h5 > a ,
+.note-container> h6 > a{
+    opacity: 0;
+    text-decoration: none;
+}
+
+.note-container>h1:hover > a,
+.note-container>h2:hover > a,
+.note-container>h3:hover > a,
+.note-container>h4:hover > a,
+.note-container>h5:hover > a,
+.note-container>h6:hover > a {
+    opacity: 0.5;
+}
+
+
 .note-container img {
     margin: 1.5em 0;
 }

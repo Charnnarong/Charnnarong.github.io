@@ -890,7 +890,7 @@ kubernetes-dashboard        NodePort    10.100.130.210   &lt;none&gt;        443
 <p><img src="https://i.imgur.com/qOvJhF9.png" alt="Imgur"></p>
 <h1 id="when-join-node-after-k8s-package-has-been-updated">When join node after k8s package has been updated.</h1>
 <h2 id="situation">situation</h2>
-<p>I was using 3 nodes [master, node1, node2] for a while. Later on, I decided to join a new node [node3] to the cluster. This time, k8s has upgrade from 1.17.4-0 to 1.18.0-0. Without knowing it had been upgraded, the installation of kubelet and kubeadm are ultimately picked the latest version up. When join node I get this error</p>
+<p>I was using 3 nodes [master, node1, node2] for a while. Later on, I decided to join a new node [node3] to the cluster. At that time, k8s had upgraded from 1.17.4-0 to 1.18.0-0. Without knowing it had been upgraded, the installation of kubelet and kubeadm were ultimately picking the latest version i.e. 1.18.0-0. When I try to join the new node I got this error</p>
 <pre><code class="language-bash"><div>[root@node3 vagrant]<span class="hljs-comment"># kubeadm join 172.42.42.99:6443 --token 0z3hm2.hwh087wzg9u1jvxu     --discovery-token-ca-cert-hash sha256:769c0a302fa6334518ade9353191bc2905d9db03ff967f579c353d9333c6a58 e</span>
 W0331 06:20:14.644517   31403 join.go:346] [preflight] WARNING: JoinControlPane.controlPlane settings will be ignored when control-plane flag is not <span class="hljs-built_in">set</span>.
 [preflight] Running pre-flight checks
