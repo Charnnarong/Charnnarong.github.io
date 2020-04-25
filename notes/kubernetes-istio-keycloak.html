@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-62655793-4');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+  <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+  <title>Securing kubernetes clusters with Istio and Keycloak</title>
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+  <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+  <div class="nav-home">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+<div class="vscode-light note-container">
+
+<h1 id="securing-kubernetes-clusters-with-istio-and-keycloak">Securing kubernetes clusters with Istio and Keycloak</h1>
+<p>The walk through is inspired from<br>
+<a href="https://auth0.com/blog/securing-kubernetes-clusters-with-istio-and-auth0/">https://auth0.com/blog/securing-kubernetes-clusters-with-istio-and-auth0/</a></p>
+<p>This walk through use the most recent version of Helm and Istio.</p>
+<p>The goal is to install Helm and Istio just like:</p>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ istioctl version
+client version: 1.5.1
+control plane version: 1.5.1
+data plane version: 1.5.1 (3 proxies)
+
+[vagrant@master ~]$ helm version
+version.BuildInfo{Version:<span class="hljs-string">"v3.2.0"</span>, GitCommit:<span class="hljs-string">"e11b7ce3b12db2941e90399e874513fbd24bcb71"</span>, GitTreeState:<span class="hljs-string">"clean"</span>, GoVersion:<span class="hljs-string">"go1.13.10"</span>}
+</div></code></pre>
+<p>Lets' begin.</p>
+<h2 id="prerequisite">Prerequisite</h2>
+<ul>
+<li><a href="https://charnnarong.github.io/notes/install-k8s-locally.html#vagrant-file">Vagrant file</a></li>
+<li><a href="https://charnnarong.github.io/notes/nexus-behind-nginx-ssl.html#nexus-oss-behind-nginx-with-ssl-on">Nexus for docker private registry</a></li>
+</ul>
+<h2 id="install-helm">Install Helm</h2>
+<ul>
+<li>download Helm</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ wget https://get.helm.sh/helm-v3.2.0-linux-amd64.tar.gz
+</div></code></pre>
+<ul>
+<li>Decompress</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ tar -zxvf helm-v3.2.0-linux-amd64.tar.gz
+</div></code></pre>
+<ul>
+<li>move to bin</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ sudo mv linux-amd64/helm /usr/<span class="hljs-built_in">local</span>/bin/helm
+</div></code></pre>
+<ul>
+<li>check helm</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ helm version
+version.BuildInfo{Version:<span class="hljs-string">"v3.2.0"</span>, GitCommit:<span class="hljs-string">"e11b7ce3b12db2941e90399e874513fbd24bcb71"</span>, GitTreeState:<span class="hljs-string">"clean"</span>, GoVersion:<span class="hljs-string">"go1.13.10"</span>}
+</div></code></pre>
+<ul>
+<li>Initialize a Helm Chart Repository</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+</div></code></pre>
+<ul>
+<li>Update Helm Repo</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ helm repo update
+</div></code></pre>
+<h2 id="istio">Istio</h2>
+<ul>
+<li>install</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ curl -L https://raw.githubusercontent.com/istio/istio/1.5.2/release/downloadIstioCandidate.sh | sh -
+</div></code></pre>
+<ul>
+<li>go inside istio dis</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ <span class="hljs-built_in">cd</span> istio-1.5.2/
+</div></code></pre>
+<ul>
+<li>export PATh</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-1.5.2]$ <span class="hljs-built_in">export</span> PATH=<span class="hljs-string">"<span class="hljs-variable">$PATH</span>:/home/vagrant/istio-1.5.2/bin"</span>
+</div></code></pre>
+<ul>
+<li>check istio installation.</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ istioctl verify-install
+
+Checking the cluster to make sure it is ready <span class="hljs-keyword">for</span> Istio installation...
+
+<span class="hljs-comment">#1. Kubernetes-api</span>
+-----------------------
+Can initialize the Kubernetes client.
+Can query the Kubernetes API Server.
+
+<span class="hljs-comment">#2. Kubernetes-version</span>
+-----------------------
+Istio is compatible with Kubernetes: v1.17.4.
+
+<span class="hljs-comment">#3. Istio-existence</span>
+-----------------------
+Istio will be installed <span class="hljs-keyword">in</span> the istio-system namespace.
+
+<span class="hljs-comment">#4. Kubernetes-setup</span>
+-----------------------
+Can create necessary Kubernetes configurations: Namespace,ClusterRole,ClusterRoleBinding,CustomResourceDefinition,Role,ServiceAccount,Service,Deployments,ConfigMap.
+
+<span class="hljs-comment">#5. SideCar-Injector</span>
+-----------------------
+This Kubernetes cluster supports automatic sidecar injection. To <span class="hljs-built_in">enable</span> automatic sidecar injection see https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/<span class="hljs-comment">#deploying-an-app</span>
+
+-----------------------
+Install Pre-Check passed! The cluster is ready <span class="hljs-keyword">for</span> Istio installation.
+</div></code></pre>
+<ul>
+<li>apply Istio default profile</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ istioctl manifest apply
+</div></code></pre>
+<ul>
+<li><em>output</em><pre><code class="language-bash"><div>This will install the default Istio profile into the cluster. Proceed? (y/N) y
+Detected that your cluster does not support third party JWT authentication. Falling back to less secure first party JWT. See https://istio.io/docs/ops/best-practices/security/<span class="hljs-comment">#configure-third-party-service-account-tokens for details.</span>
+- Applying manifest <span class="hljs-keyword">for</span> component Base...
+✔ Finished applying manifest <span class="hljs-keyword">for</span> component Base.
+- Applying manifest <span class="hljs-keyword">for</span> component Pilot...
+✔ Finished applying manifest <span class="hljs-keyword">for</span> component Pilot.
+Waiting <span class="hljs-keyword">for</span> resources to become ready...
+Waiting <span class="hljs-keyword">for</span> resources to become ready...
+Waiting <span class="hljs-keyword">for</span> resources to become ready...
+- Applying manifest <span class="hljs-keyword">for</span> component IngressGateways...
+- Applying manifest <span class="hljs-keyword">for</span> component AddonComponents...
+✔ Finished applying manifest <span class="hljs-keyword">for</span> component IngressGateways.
+✔ Finished applying manifest <span class="hljs-keyword">for</span> component AddonComponents.
+
+
+✔ Installation complete
+</div></code></pre>
+</li>
+<li>Add a namespace label to instruct Istio to automatically inject Envoy sidecar proxies when you deploy your application later:</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl label namespace default istio-injection=enabled
+</div></code></pre>
+<ul>
+<li>check pod</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ kubectl get pods -n istio-system
+NAME                                    READY   STATUS    RESTARTS   AGE
+istio-ingressgateway-64f6f9d5c6-74m5t   1/1     Running   0          2m27s
+istiod-5bb879d86c-rzx6d                 1/1     Running   0          3m47s
+prometheus-77b9c64b9c-rzdxl             2/2     Running   0          2m27s
+</div></code></pre>
+<h2 id="running-the-book-info-application">Running the Book info Application</h2>
+<ul>
+<li>clone the project (the original version here <a href="https://github.com/auth0-blog/istio-auth0.git">https://github.com/auth0-blog/istio-auth0.git</a>) but the original version hasn't been upgrade k8s's resources.</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ git <span class="hljs-built_in">clone</span> https://github.com/Charnnarong/istio-auth0.git 
+</div></code></pre>
+<ul>
+<li>cd it</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master ~]$ <span class="hljs-built_in">cd</span> istio-auth0
+</div></code></pre>
+<ul>
+<li>Apply bookinfo.yaml</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f platform/kube/bookinfo.yaml
+</div></code></pre>
+<ul>
+<li>Get Pod. ( it takes times. approximately 3 minutes)</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ kubectl get pods
+NAME                              READY   STATUS    RESTARTS   AGE
+details-v1-b64c6587c-mlcm2        2/2     Running   0          3m1s
+productpage-v1-6949c86b7f-dmbkf   2/2     Running   0          3m1s
+ratings-v1-568cf588f7-299mx       2/2     Running   0          3m1s
+reviews-v1-84dcf85db4-hzrp5       2/2     Running   0          3m1s
+reviews-v2-8586bf7b84-w57gk       2/2     Running   0          3m1s
+reviews-v3-5b7c57bfcb-m5mzz       2/2     Running   0          3m1s
+</div></code></pre>
+<ul>
+<li>deploy Istio's gateway.</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f networking/bookinfo-gateway.yaml
+</div></code></pre>
+<ul>
+<li>deploy Istio's virtual services.</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f networking/bookinfo-virtualservice.yaml
+</div></code></pre>
+<ul>
+<li>check istio-ingressgateway</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k get svc -n istio-system istio-ingressgateway
+NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)
+                  AGE
+istio-ingressgateway   LoadBalancer   10.110.85.170   &lt;pending&gt;     15020:31979/TCP,80:31234/TCP,443:30161/TCP,15029:31666/TCP,15030:31244/TCP,15031:30831/TCP,15032:30713/TCP,31400:32065/TCP,15443:32706/TCP   13h
+</div></code></pre>
+<ul>
+<li>access via port 80 which is mapped to 31234</li>
+</ul>
+<p><img src="https://i.imgur.com/Su8v6tI.png" alt="Imgur"></p>
+<h2 id="supporting-signin-and-signup">Supporting SignIn and SignUp.</h2>
+<ul>
+<li>create dir for keycloak volume</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@node3 ~]$ mkdir /tmp/keycloak
+</div></code></pre>
+<ul>
+<li>run key keycloak</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@node3 ~]$ docker run -d -p 8180:8080 -p 8280:8443 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -v /tmp/keycloak/:/tmp --name my-keycloak jboss/keycloak:9.0.3
+</div></code></pre>
+<ul>
+<li>access keycloak admin <a href="https://172.42.42.30:8280/">https://172.42.42.30:8280/</a></li>
+<li>add realm bookshop</li>
+</ul>
+<p><img src="https://i.imgur.com/eoAEQPc.png" alt="Imgur"></p>
+<ul>
+<li>add book-ui client</li>
+</ul>
+<p><img src="https://i.imgur.com/GiWdQLy.png" alt="Imgur"></p>
+<ul>
+<li>update issuer and jwk uri, in file security\bookinfo-policy.yaml</li>
+</ul>
+<pre><code class="language-yaml"><div><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">"authentication.istio.io/v1alpha1"</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">"Policy"</span>
+<span class="hljs-attr">metadata:</span>
+<span class="hljs-attr">  name:</span> <span class="hljs-string">bookinfo</span>
+<span class="hljs-attr">spec:</span>
+<span class="hljs-attr">  targets:</span>
+<span class="hljs-attr">  - name:</span> <span class="hljs-string">reviews</span>
+<span class="hljs-attr">  - name:</span> <span class="hljs-string">ratings</span>
+<span class="hljs-attr">  - name:</span> <span class="hljs-string">details</span>
+<span class="hljs-attr">  origins:</span>
+<span class="hljs-attr">  - jwt:</span>
+      <span class="hljs-comment"># issuer: "https://{YOUR_DOMAIN}/"</span>
+<span class="hljs-attr">      issuer:</span> <span class="hljs-string">"https://172.42.42.30:8280/auth/realms/bookshop"</span>
+      <span class="hljs-comment"># jwksUri: "https://{YOUR_DOMAIN}/.well-known/jwks.json"</span>
+<span class="hljs-attr">      jwksUri:</span> <span class="hljs-string">"https://172.42.42.30:8280/auth/realms/bookshop/protocol/openid-connect/certs"</span>
+<span class="hljs-attr">  principalBinding:</span> <span class="hljs-string">USE_ORIGIN</span>
+</div></code></pre>
+<ul>
+<li>apply book security info</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f security/bookinfo-policy.yaml
+</div></code></pre>
+<ul>
+<li>try to access product page again you will see an error</li>
+</ul>
+<p><img src="https://i.imgur.com/K2owU33.png" alt="Imgur"></p>
+<ul>
+<li>Enabling Service to Service Authentication</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f networking/destination-rule-mtls.yaml
+<span class="hljs-comment">#--- output---</span>
+destinationrule.networking.istio.io/reviews created
+destinationrule.networking.istio.io/ratings created
+destinationrule.networking.istio.io/details created
+</div></code></pre>
+<h2 id="enable-user-to-authenticate-through-keycloak">Enable user to authenticate Through Keycloak.</h2>
+<ul>
+<li>add user to keycloak</li>
+</ul>
+<p><img src="https://i.imgur.com/gmhzMnV.png" alt="Imgur"></p>
+<ul>
+<li>set bob's password to <code>bob</code></li>
+</ul>
+<p><img src="https://i.imgur.com/XhUOu4e.png" alt="Imgur"></p>
+<ul>
+<li>client secret here.</li>
+</ul>
+<p><img src="https://i.imgur.com/GrIEZ7B.png" alt="Imgur"></p>
+<ul>
+<li>add requirement to project. <code>src\productpage\requirements.txt</code></li>
+</ul>
+<pre><code class="language-text"><code><div>authlib==0.10
+six==1.11.0
+</div></code></code></pre>
+<p><img src="https://i.imgur.com/q6JwosF.png" alt="Imgur"></p>
+<ul>
+<li>modified file <code>src\productpage\productpage.py</code></li>
+</ul>
+<pre><code class="language-python"><div><span class="hljs-keyword">from</span> authlib.flask.client <span class="hljs-keyword">import</span> OAuth
+<span class="hljs-keyword">from</span> six.moves.urllib.parse <span class="hljs-keyword">import</span> urlencode
+
+<span class="hljs-comment"># Bootstrap(app)</span>
+
+<span class="hljs-comment"># AUTH0_CALLBACK_URL = "http://{YOUR-CLUSTER-PUBLIC-IP}/callback"</span>
+AUTH0_CALLBACK_URL = <span class="hljs-string">"http://172.42.42.99:31234/callback"</span>
+
+<span class="hljs-comment"># AUTH0_CLIENT_ID = "{YOUR-APPLICATION-CLIENT-ID}"</span>
+AUTH0_CLIENT_ID = <span class="hljs-string">"book-ui"</span>
+
+<span class="hljs-comment"># AUTH0_CLIENT_SECRET = "{YOUR-APPLICATION-CLIENT-SECRET}"</span>
+AUTH0_CLIENT_SECRET = <span class="hljs-string">"b35e1fab-0675-4f83-9e96-61c1a31ac3f9"</span>
+
+<span class="hljs-comment"># AUTH0_DOMAIN = "{YOUR-AUTH0-DOMAIN}"</span>
+AUTH0_DOMAIN = <span class="hljs-string">"172.42.42.30:8280"</span>
+AUTH0_BASE_URL = <span class="hljs-string">'https://'</span> + AUTH0_DOMAIN
+
+<span class="hljs-comment"># AUTH0_AUDIENCE = "{YOUR-AUDIENCE}"</span>
+AUTH0_AUDIENCE = <span class="hljs-string">"account"</span>
+
+oauth = OAuth(app)
+auth0 = oauth.register(
+    <span class="hljs-string">'auth0'</span>,
+    client_id=AUTH0_CLIENT_ID,
+    client_secret=AUTH0_CLIENT_SECRET,
+    api_base_url=AUTH0_BASE_URL,
+    <span class="hljs-comment"># https://172.42.42.30:8280/auth/realms/bookshop/protocol/openid-connect/token</span>
+    access_token_url=AUTH0_BASE_URL + <span class="hljs-string">'/auth/realms/bookshop/protocol/openid-connect/token'</span>,
+    <span class="hljs-comment"># https://172.42.42.30:8280/auth/realms/bookshop/protocol/openid-connect/auth</span>
+    authorize_url=AUTH0_BASE_URL + <span class="hljs-string">'/auth/realms/bookshop/protocol/openid-connect/auth'</span>,
+    client_kwargs={
+        <span class="hljs-string">'scope'</span>: <span class="hljs-string">'openid profile'</span>,
+    },
+)
+
+</div></code></pre>
+<ul>
+<li>The file should looks like:</li>
+</ul>
+<p><img src="https://i.imgur.com/56QwCLH.png" alt="Imgur"></p>
+<ul>
+<li>still on the <code>src/productpage/productpage.py</code></li>
+<li>add some routes (diff below.)</li>
+</ul>
+<pre><code class="language-python"><div><span class="hljs-meta">@app.route('/login')</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">login</span><span class="hljs-params">()</span>:</span>
+    <span class="hljs-keyword">return</span> auth0.authorize_redirect(redirect_uri=AUTH0_CALLBACK_URL, 
+                                    audience=AUTH0_AUDIENCE)
+<span class="hljs-meta">@app.route('/callback')</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">callback</span><span class="hljs-params">()</span>:</span>
+    response = auth0.authorize_access_token()          <span class="hljs-comment"># 1</span>
+    session[<span class="hljs-string">'access_token'</span>] = response[<span class="hljs-string">'access_token'</span>] <span class="hljs-comment"># 2</span>
+    userinfoResponse = auth0.get(<span class="hljs-string">'userinfo'</span>)           <span class="hljs-comment"># 3</span>
+    userinfo = userinfoResponse.json()
+    session[<span class="hljs-string">'user'</span>] = userinfo[<span class="hljs-string">'nickname'</span>]             <span class="hljs-comment"># 4</span>
+    <span class="hljs-keyword">return</span> redirect(<span class="hljs-string">'/productpage'</span>)
+
+<span class="hljs-meta">@app.route('/logout')</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">logout</span><span class="hljs-params">()</span>:</span>
+    session.clear()
+    <span class="hljs-comment"># params = {'returnTo': url_for('front', _external=True),</span>
+    <span class="hljs-comment">#           'client_id': AUTH0_CLIENT_ID}</span>
+    params = {<span class="hljs-string">'redirect_uri'</span>: url_for(<span class="hljs-string">'front'</span>, _external=<span class="hljs-literal">True</span>)}
+    <span class="hljs-comment"># return redirect(auth0.api_base_url + '/v2/logout?' + urlencode(params))</span>
+    <span class="hljs-comment">#   https://172.42.42.30:8280/auth/realms/bookshop/protocol/openid-connect/logout</span>
+    <span class="hljs-keyword">return</span> redirect(auth0.api_base_url + <span class="hljs-string">'/auth/realms/bookshop/protocol/openid-connect/logout?'</span> + urlencode(params))
+</div></code></pre>
+<p><img src="https://i.imgur.com/bJ0SPgW.png" alt="Imgur"></p>
+<ul>
+<li>add access token in header (image below)</li>
+</ul>
+<pre><code class="language-python"><div><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getForwardHeaders</span><span class="hljs-params">(request)</span>:</span>
+    headers = {}
+
+    <span class="hljs-keyword">if</span> <span class="hljs-string">'access_token'</span> <span class="hljs-keyword">in</span> session:
+        headers[<span class="hljs-string">'Authorization'</span>] = <span class="hljs-string">'Bearer '</span> + session[<span class="hljs-string">'access_token'</span>]
+</div></code></pre>
+<p><img src="https://i.imgur.com/e7hGOd0.png" alt="Imgur"></p>
+<h2 id="deploying-the-new-version-of-the-product-page">Deploying the New Version of the Product Page</h2>
+<ul>
+<li>build and push into <a href="https://charnnarong.github.io/notes/nexus-behind-nginx-ssl.html#nexus-oss-behind-nginx-with-ssl-on">private docker repo </a></li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ docker build -t private.repo.com:5086/productpage:istio-auth0 ./src/productpage
+</div></code></pre>
+<ul>
+<li>push the image.</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ docker push private.repo.com:5086/productpage:istio-auth0
+</div></code></pre>
+<ul>
+<li>Check if it in the repo.</li>
+</ul>
+<p><img src="https://i.imgur.com/NAi6myk.png" alt="Imgur"></p>
+<ul>
+<li>Check if productpage-v1 is still in k8s :D</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k get deployments productpage-v1
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+productpage-v1   1/1     1            1          xxh
+</div></code></pre>
+<ul>
+<li>set the new image to it.</li>
+</ul>
+<pre><code class="language-bash"><div>kubectl <span class="hljs-built_in">set</span> image deployment/productpage-v1 \
+  productpage=private.repo.com:5086/productpage:istio-auth0
+
+<span class="hljs-comment">#--- output ----</span>
+deployment.apps/productpage-v1 image updated
+</div></code></pre>
+<ul>
+<li>login (user: bob , pass: bob)</li>
+</ul>
+<p><img src="https://i.imgur.com/Nyn6KZB.png" alt="Imgur"></p>
+<ul>
+<li>Get error: This is happening because, by default, Istio blocks unexpected outgoing requests (in this case, Istio is blocking your web application from communicating with Keycloak to get details about who logged in)</li>
+</ul>
+<p><img src="https://i.imgur.com/Nv6MoK8.png" alt="Imgur"></p>
+<blockquote>
+<h3 id="unexpected-problem-istio-side-car-unhealthy">Unexpected problem Istio Side-car Unhealthy</h3>
+<p>When istio sidecar is not running</p>
+<pre><code class="language-bash"><div> [vagrant@master istio-auth0]$ k get po
+  NAME                              READY   STATUS    RESTARTS   AGE
+  details-v1-b64c6587c-576bj        1/2     Running   0          38m
+<span class="hljs-comment">#---</span>
+[vagrant@master istio-auth0]$ k describe pod details-v1-b64c6587c-576bj
+<span class="hljs-comment">#...</span>
+Events:
+  Type     Reason     Age                   From               Message
+  ----     ------     ----                  ----               -------
+  <span class="hljs-comment">#...</span>
+  Warning  Unhealthy  25s (x1200 over 40m)  kubelet, node2     Readiness probe failed: HTTP probe failed with statuscode: 503
+</div></code></pre>
+<p>To fix it.</p>
+<pre><code class="language-bash"><div>[vagrant@master bin]$ <span class="hljs-built_in">pwd</span>
+/home/vagrant/istio-1.5.1/bin
+[vagrant@master bin]$ ./istioctl manifest apply --<span class="hljs-built_in">set</span> values.sidecarInjectorWebhook.rewriteAppHTTPProbe=<span class="hljs-literal">true</span>
+[vagrant@master istio-auth0]$ k delete -f platform/kube/bookinfo.yaml
+[vagrant@master istio-auth0]$ k create -f platform/kube/bookinfo.yaml
+<span class="hljs-comment">#..... keep deleting and reapply for security\bookinfo-policy.yaml, networking\*.yaml and re-setimage for productpage.</span>
+</div></code></pre>
+</blockquote>
+<h2 id="defining-an-istio-egress">Defining an Istio Egress</h2>
+<ul>
+<li>apply Egress</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f networking/auth0-egress.yaml
+Error from server: error when creating <span class="hljs-string">"networking/auth0-egress.yaml"</span>: admission webhook <span class="hljs-string">"validation.istio.io"</span> denied the request: configuration is invalid: 2 errors occurred:
+        * domain name <span class="hljs-string">"42.42.30"</span> invalid (top level domain <span class="hljs-string">"30"</span> cannot be all-numeric)
+        * hosts must be FQDN <span class="hljs-keyword">if</span> no endpoints are provided <span class="hljs-keyword">for</span> resolution mode DNS
+</div></code></pre>
+<ul>
+<li>add name to keycloak.</li>
+</ul>
+<pre><code class="language-bash"><div>[root@master istio-auth0]<span class="hljs-comment"># echo "172.42.42.30 keycloakhost" &gt;&gt; /etc/hosts</span>
+[root@master istio-auth0]<span class="hljs-comment"># cat /etc/hosts</span>
+172.42.42.99 master
+172.42.42.20 private.repo.com
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+172.42.42.30 keycloakhost
+
+[root@node2 vagrant]<span class="hljs-comment"># echo "172.42.42.30 keycloakhost" &gt;&gt; /etc/hosts</span>
+[root@node3 vagrant]<span class="hljs-comment"># echo "172.42.42.30 keycloakhost" &gt;&gt; /etc/hosts</span>
+</div></code></pre>
+<ul>
+<li>modified networking\auth0-egress.yaml; replace <code>172.42.42.30</code> to <code>keycloakhost</code></li>
+<li>reapply auth0-egress.yaml</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f networking/auth0-egress.yaml
+serviceentry.networking.istio.io/auth0-ext created
+virtualservice.networking.istio.io/keycloakhost created
+</div></code></pre>
+<ul>
+<li>update security\bookinfo-policy.yaml domain :</li>
+</ul>
+<pre><code class="language-yaml"><div><span class="hljs-attr">- jwt:</span>
+    <span class="hljs-comment"># issuer: "https://{YOUR_DOMAIN}/"</span>
+    <span class="hljs-comment"># issuer: "https://172.42.42.30:8280/auth/realms/bookshop"</span>
+<span class="hljs-attr">    issuer:</span> <span class="hljs-string">"https://keycloakhost:8280/auth/realms/bookshop"</span>
+    <span class="hljs-comment"># jwksUri: "https://{YOUR_DOMAIN}/.well-known/jwks.json"</span>
+    <span class="hljs-comment"># jwksUri: "https://172.42.42.30:8280/auth/realms/bookshop/protocol/openid-connect/certs"</span>
+<span class="hljs-attr">    jwksUri:</span> <span class="hljs-string">"https://keycloakhost:8280/auth/realms/bookshop/protocol/openid-connect/certs"</span>
+</div></code></pre>
+<ul>
+<li>reapply it.</li>
+</ul>
+<pre><code class="language-bash"><div>[vagrant@master istio-auth0]$ k apply -f security/bookinfo-policy.yaml
+</div></code></pre>
+<ul>
+<li>login</li>
+</ul>
+<p><img src="https://i.imgur.com/QKQuLqv.png" alt="Imgur"></p>
+<h2 id="caveat">Caveat</h2>
+<p>After sign out, Book details and Book Reviews are suppose to be broken, but it is still work. Looks like there is something about Jwt and MutualTLS. Some Istio's tickets mentioned that Istion version 1.5 has some improvement, while the yaml resources were written with an older version. Anyway this conclude how Istio can work with OAuth and OpenID server.</p>
+<p><img src="https://i.imgur.com/nbGTX7z.png" alt="Imgur"></p>
+<h2 id="eof">EOF</h2>
+
+    
+</div>
+</body>
+<footer>
+  <div class="nav-home--footer">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+</footer>
+
+
+</html>
