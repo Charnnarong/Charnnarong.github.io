@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-62655793-4"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'UA-62655793-4');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script type="text/javascript" src="../main.js" charset="utf-8"></script>
+  <link href="https://fonts.googleapis.com/css?family=Literata&display=swap" rel="stylesheet">
+
+  <title>Securing kubernetes clusters with Istio and Keycloak</title>
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+  <link rel="stylesheet" href="../style.css">
+
+</head>
+
+<body>
+  <div class="nav-home">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+<div class="vscode-light note-container">
+
+<h1 id="understand-certificate">Understand Certificate</h1>
+<p>Hands on with Golang.</p>
+<p>Generate Certificate authority key.</p>
+<pre><code class="language-sh"><div>openssl genrsa -out ca.key 4096
+</div></code></pre>
+<p>Self sign CA</p>
+<pre><code class="language-sh"><div>openssl req -x509 -new -nodes -sha512 -days 3650 \
+    -subj <span class="hljs-string">"/C=TH/ST=Bangkok/L=Bangkok/O=example/OU=Personal/CN=Kone CA/subjectAltName=DNS:kone-ca.com"</span> \
+    -key ca.key \
+    -out ca.crt
+</div></code></pre>
+<p>view  certificate</p>
+<pre><code class="language-sh"><div>openssl x509 -<span class="hljs-keyword">in</span> ca.crt -text
+</div></code></pre>
+<p>Create key pair for hello-service</p>
+<pre><code class="language-sh"><div>openssl genrsa -out hello-service.com.key 4096
+</div></code></pre>
+<p>Create certificate signing request for hello-service</p>
+<pre><code class="language-sh"><div>openssl req -sha512 -new \
+    -subj <span class="hljs-string">"/C=TH/ST=Bangkok/L=Bangkok/O=example/OU=Personal/CN=Awesome hello service/subjectAltName=DNS:hello-service.com"</span> \
+    -key hello-service.com.key \
+    -out hello-service.com.csr
+</div></code></pre>
+<p>create v3.ext file with the following content.</p>
+<pre><code class="language-text"><code><div>authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1=hello-service.com
+DNS.2=*.hello-service.com
+</div></code></code></pre>
+<p>create certificate</p>
+<pre><code class="language-sh"><div>openssl x509 -req -sha512 -days 3650 \
+    -extfile v3.ext \
+    -CA ca.crt -CAkey ca.key -CAcreateserial \
+    -<span class="hljs-keyword">in</span> hello-service.com.csr \
+    -out hello-service.com.crt
+</div></code></pre>
+<hr>
+<h2 id="chain-of-trust">Chain of trust.</h2>
+<p>Generate key pair for intermediate certificate.</p>
+<pre><code class="language-sh"><div>openssl genrsa -out ica1.key 4096
+</div></code></pre>
+<p>Create certificate signing request.</p>
+<pre><code class="language-sh"><div>openssl req -new -sha512 -subj <span class="hljs-string">"/C=TH/ST=Bangkok/L=Bangkok/O=example/OU=Personal/CN=Inter Kone CA"</span> -key ica1.key -out ica1.csr
+</div></code></pre>
+<p>Prepare for openssl config</p>
+<pre><code class="language-sh"><div>touch index.txt
+touch serial
+<span class="hljs-built_in">echo</span> 01 &gt; serial
+</div></code></pre>
+<p>create openssl-ica.cnf</p>
+<pre><code class="language-sh"><div>touch openssl-ica.cnf
+</div></code></pre>
+<p>Added to openssl-ica.cnf file</p>
+<pre><code class="language-text"><code><div>[ ca ]
+default_ca      = CA_default            # The default ca section
+
+[ CA_default ]
+dir             = .            
+certs           = .
+new_certs_dir = .
+database        =./index.txt
+default_md      = sha512
+policy = policy_match
+serial = ./serial
+
+[ policy_match ]
+countryName             = match
+stateOrProvinceName     = match
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ v3_intermediate_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true, pathlen:0
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+</div></code></code></pre>
+<p>Sign intermediate certificate with our root CA</p>
+<pre><code class="language-sh"><div>openssl ca -config openssl-ica.cnf -extensions v3_intermediate_ca -days 3650 -cert ca.crt -keyfile ca.key -<span class="hljs-keyword">in</span> ica1.csr -out ica1.pem
+</div></code></pre>
+<p>convert to pem</p>
+<pre><code class="language-sh"><div>openssl x509 -<span class="hljs-keyword">in</span> ica1.pem -out ica1-x509.pem -outform PEM
+</div></code></pre>
+<p>bundle certificate</p>
+<pre><code class="language-sh"><div>cat ica1-x509.pem ca.crt &gt; kone-bundle-cert.pem
+</div></code></pre>
+<p>Sing hello-server with intermediate certificate</p>
+<pre><code class="language-sh"><div>openssl x509 -req -sha512 -days 3650 \
+    -extfile v3.ext \
+    -CA ica1.pem -CAkey ica1.key -CAcreateserial \
+    -<span class="hljs-keyword">in</span> hello-service.com.csr \
+    -out hello-service-by-iac.com.crt
+</div></code></pre>
+<p>REF :</p>
+<p><a href="https://www.ssl.com/faqs/what-is-an-x-509-certificate/" target="_blank">https://www.ssl.com/faqs/what-is-an-x-509-certificate/</a></p>
+<p><a href="https://www.golinuxcloud.com/openssl-create-certificate-chain-linux" target="_blank">https://www.golinuxcloud.com/openssl-create-certificate-chain-linux</a></p>
+<p><a href="https://www.ssl.com/faqs" target="_blank">https://www.ssl.com/faqs</a></p>
+
+    
+
+</div>
+</body>
+<footer>
+  <div class="nav-home--footer">
+    <a class="btn-primary" href="../index.html">Home</a>
+  </div>
+</footer>
+
+
+</html>
